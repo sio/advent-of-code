@@ -1,18 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"log"
-	"os"
 	"sort"
 	"strconv"
 )
-
-type ElfBag struct {
-	OwnerID  int
-	Items    int
-	Calories int
-}
 
 type byCalories []ElfBag
 
@@ -26,27 +18,19 @@ func (s byCalories) Less(i, j int) bool {
 	return s[i].Calories < s[j].Calories
 }
 
-func main() {
-	file, err := os.Open("input.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
+const topBagsCount = 3
 
-	scanner := bufio.NewScanner(file)
+func part2(input string) {
+	log.Println("Day 1 Part 2")
 	var line string
 	var current ElfBag
 
-	const topBagsCount = 3
 	topBags := make([]ElfBag, topBagsCount)
 
-	for scanner.Scan() {
-		line = scanner.Text()
+	for line = range ReadLines(input) {
 		if len(line) == 0 {
 			if current.Calories > topBags[0].Calories {
-				topBags = append(topBags, current)
-				sort.Sort(byCalories(topBags))
-				topBags = topBags[len(topBags)-topBagsCount:]
+				topBags = AppendBag(topBags, current)
 			}
 			current = ElfBag{OwnerID: current.OwnerID + 1}
 			continue
@@ -58,9 +42,7 @@ func main() {
 		current.Items += 1
 		current.Calories += number
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
+	topBags = AppendBag(topBags, current)
 	var sumCalories int
 	for _, bag := range topBags {
 		log.Printf(
@@ -72,4 +54,10 @@ func main() {
 		sumCalories += bag.Calories
 	}
 	log.Printf("sum: %d\n", sumCalories)
+}
+
+func AppendBag(bags []ElfBag, bag ElfBag) []ElfBag {
+	bags = append(bags, bag)
+	sort.Sort(byCalories(bags))
+	return bags[len(bags)-topBagsCount:]
 }

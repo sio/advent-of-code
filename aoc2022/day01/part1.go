@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"log"
-	"os"
 	"strconv"
 )
 
@@ -13,18 +11,10 @@ type ElfBag struct {
 	Calories int
 }
 
-func main() {
-	file, err := os.Open("input.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	var line string
+func part1(input string) {
+	log.Println("Day 1 Part 1")
 	var current, biggest ElfBag
-	for scanner.Scan() {
-		line = scanner.Text()
+	for line := range ReadLines(input) {
 		if len(line) == 0 {
 			if current.Calories > biggest.Calories {
 				biggest = current
@@ -38,9 +28,6 @@ func main() {
 		}
 		current.Items += 1
 		current.Calories += number
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
 	}
 	log.Printf(
 		"Biggest bag: OwnerID=%d, Items=%d, Calories=%d",
