@@ -1,9 +1,7 @@
 package main
 
 import (
-	"flag"
 	"log"
-	"os"
 	"strings"
 )
 
@@ -41,24 +39,6 @@ func (g *GameRound) Score() int {
 
 func (g *GameRound) Valid() bool {
 	return g.Us >= 0 && g.Us < 3 && g.Them >= 0 && g.Them < 3
-}
-
-func main() {
-	part := flag.Int("part", 0, "puzzle part")
-	flag.Parse()
-	if flag.NArg() != 1 {
-		flag.Usage()
-		os.Exit(1)
-	}
-	switch *part {
-	case 1:
-		part1(flag.Args()[0])
-	case 2:
-		part2(flag.Args()[0])
-	default:
-		part1(flag.Args()[0])
-		part2(flag.Args()[0])
-	}
 }
 
 func part1(filename string) {
