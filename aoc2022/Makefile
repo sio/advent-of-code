@@ -10,4 +10,4 @@ build/$(DAY): $(shell find $(DAY) -type f)
 
 .PHONY: all
 all:
-	$(foreach d,$(wildcard day??),$(MAKE) DAY=$(d);)
+	$(foreach d,$(wildcard day??),$(MAKE) DAY=$(d) &&) exit
