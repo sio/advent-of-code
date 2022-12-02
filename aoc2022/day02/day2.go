@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"log"
 	"os"
 	"strings"
@@ -44,10 +44,21 @@ func (g *GameRound) Valid() bool {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Printf("usage: %s INPUT\n", os.Args[0])
+	part := flag.Int("part", 1, "puzzle part")
+	flag.Parse()
+	if flag.NArg() != 1 {
+		flag.Usage()
 		os.Exit(1)
 	}
+	switch *part {
+	case 1:
+		part1(flag.Args()[0])
+	default:
+		log.Fatalf("invalid part number: %d", *part)
+	}
+}
+
+func part1(filename string) {
 	opponentMoves := map[string]GameMove{
 		"A": Rock,
 		"B": Paper,
@@ -60,7 +71,7 @@ func main() {
 	}
 	var moves []string
 	var score int
-	for line := range ReadLines(os.Args[1]) {
+	for line := range ReadLines(filename) {
 		moves = strings.Split(line, " ")
 		if len(moves) != 2 {
 			log.Fatalf("unexpected input line: %s", line)
