@@ -7,3 +7,7 @@ input sample: build/$(DAY)
 
 build/$(DAY): $(shell find $(DAY) -type f)
 	$(GO) build -o $@ ./$(DAY)
+
+.PHONY: all
+all:
+	$(foreach d,$(wildcard day??),$(MAKE) DAY=$(d);)
