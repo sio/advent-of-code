@@ -10,9 +10,9 @@ import (
 type GameMove int
 
 const (
-	Rock     GameMove = 1
-	Paper    GameMove = 2
-	Scissors GameMove = 3
+	Rock     GameMove = 0
+	Paper    GameMove = 1
+	Scissors GameMove = 2
 )
 
 type GameRound struct {
@@ -36,11 +36,11 @@ func (g *GameRound) Outcome() int {
 }
 
 func (g *GameRound) Score() int {
-	return int(g.Us) + g.Outcome()
+	return 1 + int(g.Us) + g.Outcome()
 }
 
 func (g *GameRound) Valid() bool {
-	return g.Us > 0 && g.Us < 4 && g.Them > 0 && g.Them < 4
+	return g.Us >= 0 && g.Us < 3 && g.Them >= 0 && g.Them < 3
 }
 
 func main() {
@@ -117,7 +117,7 @@ func part2(filename string) {
 		if !ok {
 			log.Fatalf("invalid input: %s", line)
 		}
-		round.Us = GameMove((int(round.Them-1)+delta+3)%3 + 1)
+		round.Us = GameMove((int(round.Them) + delta + 3) % 3)
 		if !round.Valid() {
 			log.Fatalf("invalid round: %v (from line %q)", round, line)
 		}
