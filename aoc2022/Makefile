@@ -16,6 +16,10 @@ test:
 all:  ## build and execute all solutions
 	$(foreach d,$(wildcard day??),$(MAKE) DAY=$(d) &&) exit
 
+.PHONY: answers
+answers:  ## show answers for my puzzle inputs
+	grep --color=auto -R 'Your puzzle answer was' day*/
+
 .PHONY: stats
 stats:  ## show stats based on git history
 	@for d in $(sort $(wildcard day??)); \
