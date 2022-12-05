@@ -19,7 +19,7 @@ all:  ## build and execute all solutions
 .PHONY: stats
 stats:  ## show stats based on git history
 	@for d in $(sort $(wildcard day??)); \
-	do export d; git log --format=format:%as -- $$d | sort -u | awk "$$STATS_AWK"; \
+	do export d; git log --format=format:%as -- $$d ':!**README*' | sort -u | awk "$$STATS_AWK"; \
 	done
 
 define STATS_AWK
