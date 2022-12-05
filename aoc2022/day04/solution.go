@@ -32,6 +32,10 @@ func (this *SectionRange) Contains(other *SectionRange) bool {
 	return this.Start <= other.Start && this.End >= other.End
 }
 
+func (this *SectionRange) Overlaps(other *SectionRange) bool {
+	return this.Contains(other) || (this.Start >= other.Start && this.Start <= other.End) || (this.End >= other.Start && this.End <= other.End)
+}
+
 func part1(filename string) {
 	var first, second *SectionRange
 	first, second = new(SectionRange), new(SectionRange)
@@ -51,5 +55,20 @@ func part1(filename string) {
 }
 
 func part2(filename string) {
-	fmt.Printf("Part 2 answer: \n")
+	var first, second *SectionRange
+	first, second = new(SectionRange), new(SectionRange)
+	var answer int
+	for line := range ReadLines(filename) {
+		elves := strings.Split(line, ",")
+		if len(elves) != 2 {
+			log.Fatalf("invalid input line: %q", line)
+		}
+		first.Parse(elves[0])
+		second.Parse(elves[1])
+		if first.Overlaps(second) {
+			//log.Println(line)
+			answer += 1
+		}
+	}
+	fmt.Printf("Part 2 answer: %d\n", answer)
 }
