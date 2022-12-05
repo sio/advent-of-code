@@ -8,6 +8,10 @@ input sample: build/$(DAY)  ## execute solution against input file or sample
 build/$(DAY): $(shell find $(DAY) -type f)  ## build solution from source code
 	$(GO) build -o $@ ./$(DAY)
 
+.PHONY: test
+test:
+	$(GO) test ./$(DAY)
+
 .PHONY: all
 all:  ## build and execute all solutions
 	$(foreach d,$(wildcard day??),$(MAKE) DAY=$(d) &&) exit
