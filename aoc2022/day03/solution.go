@@ -39,4 +39,24 @@ func part1(filename string) {
 	fmt.Printf("Part 1 score: %d\n", total)
 }
 
-func part2(filename string) {}
+func part2(filename string) {
+	group := make([]string, 3)
+	var total, index int
+	for line := range ReadLines(filename) {
+		group[index%len(group)] = line
+		index += 1
+		if index%len(group) == 0 {
+			total += GroupScore(group)
+		}
+	}
+	fmt.Printf("Part 2 score: %d\n", total)
+}
+
+func GroupScore(group []string) int {
+	for _, r := range group[0] {
+		if strings.ContainsRune(group[1], r) && strings.ContainsRune(group[2], r) {
+			return LetterScore(r)
+		}
+	}
+	panic(fmt.Sprintf("could not find a badge for group %q", group))
+}
