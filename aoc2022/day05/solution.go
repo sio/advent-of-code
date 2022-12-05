@@ -16,6 +16,12 @@ func (s *Stack) Push(item rune) {
 	*s = append(*s, item)
 }
 
+func (s *Stack) PushN(items []rune) {
+	for _, item := range items {
+		s.Push(item)
+	}
+}
+
 func (s *Stack) Pop() (item rune, ok bool) {
 	if len(*s) == 0 {
 		return ' ', false
@@ -24,6 +30,16 @@ func (s *Stack) Pop() (item rune, ok bool) {
 	item = (*s)[index]
 	*s = (*s)[:index]
 	return item, true
+}
+
+func (s *Stack) PopN(length int) (items []rune, ok bool) {
+	if len(*s) < length {
+		return items, false
+	}
+	index := len(*s) - length
+	items = (*s)[index:]
+	*s = (*s)[:index]
+	return items, true
 }
 
 func (s *Stack) Top() rune {
@@ -96,7 +112,20 @@ func (m *Move) Apply(stacks StackGroup) {
 	}
 }
 
-func part1(filename string) {
+func (m *Move) ApplyBatch(stacks StackGroup) {
+	var boxes []rune
+	var ok bool
+	var source, destination *Stack
+	source = stacks[m.From-1]
+	destination = stacks[m.To-1]
+	boxes, ok = source.PopN(m.Boxes)
+	if !ok {
+		log.Fatalf("could not pop %d boxes from %v", m.Boxes, source)
+	}
+	destination.PushN(boxes)
+}
+
+func solution(filename string, part int) {
 	readMoves := false
 	initial := make([]string, 0)
 	var stacks StackGroup
@@ -107,7 +136,14 @@ func part1(filename string) {
 		}
 		if readMoves {
 			move.Parse(line)
-			move.Apply(stacks)
+			switch part {
+			case 1:
+				move.Apply(stacks)
+			case 2:
+				move.ApplyBatch(stacks)
+			default:
+				log.Fatalf("invalid puzzle part: %d", part)
+			}
 			continue
 		}
 		if strings.HasPrefix(line, " 1   2") {
@@ -134,7 +170,13 @@ func part1(filename string) {
 		}
 		initial = append(initial, line)
 	}
-	fmt.Printf("Part 1 result: %q", stacks.Top())
+	fmt.Printf("Part %d result: %q\n", part, stacks.Top())
 }
 
-func part2(filename string) {}
+func part1(filename string) {
+	solution(filename, 1)
+}
+
+func part2(filename string) {
+	solution(filename, 2)
+}
