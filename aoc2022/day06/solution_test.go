@@ -31,3 +31,20 @@ func TestSamplesPart1(t *testing.T) {
 		}
 	}
 }
+
+func TestSamplesPart2(t *testing.T) {
+	samples := map[string]int{
+		"mjqjpqmgbljsphdztnvjfqwrcgsmlb":    19,
+		"bvwbjplbgvbhsrlpgdmjqwftvncz":      23,
+		"nppdvjthqldpwncqszvftbrmjlhg":      23,
+		"nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg": 29,
+		"zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw":  26,
+	}
+	var got int
+	for input, expected := range samples {
+		got = LocateStartOfMessage(runesChannel(input))
+		if got != expected {
+			t.Errorf("incorrect result for %q: expected %d, got %d", input, expected, got)
+		}
+	}
+}
