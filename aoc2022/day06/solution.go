@@ -41,8 +41,15 @@ func (sw *SlidingWindow) Unique() bool {
 }
 
 func LocateStartOfPacket(input <-chan rune) (position int) {
-	const sopMarkSize = 4
-	window := SlidingWindow{size: sopMarkSize}
+	return LocateEndOfMark(input, 4)
+}
+
+func LocateStartOfMessage(input <-chan rune) (position int) {
+	return LocateEndOfMark(input, 14)
+}
+
+func LocateEndOfMark(input <-chan rune, markSize int) (position int) {
+	window := SlidingWindow{size: markSize}
 	for char := range input {
 		position += 1
 		window.Push(char)
@@ -59,5 +66,6 @@ func part1(filename string) string {
 }
 
 func part2(filename string) string {
-	return ""
+	result := LocateStartOfMessage(ReadChars(filename))
+	return strconv.Itoa(result)
 }
