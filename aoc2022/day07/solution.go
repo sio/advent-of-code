@@ -18,7 +18,7 @@ const CommandPrompt = "$ "
 func (c *Command) Parse(line string) error {
 	words := strings.Fields(line)
 	if len(words) < 2 {
-		return fmt.Errorf("command line too short: %d", line)
+		return fmt.Errorf("command line too short: %s", line)
 	}
 	if words[0] != strings.TrimSpace(CommandPrompt) {
 		return fmt.Errorf("command must start with prompt %q: %s", CommandPrompt, line)
@@ -105,7 +105,7 @@ func (s *Shell) Execute(cmd *Command) error {
 		case "..":
 			dest = s.CurrentDir.Parent
 			if dest == nil {
-				return fmt.Errorf("can not go up from %d", s.CurrentDir.Name)
+				return fmt.Errorf("can not go up from %s", s.CurrentDir.Name)
 			}
 		default:
 			var ok bool
