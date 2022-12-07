@@ -9,8 +9,12 @@ build/$(DAY): $(shell find $(DAY) -type f)  ## build solution from source code
 	$(GO) build -o $@ ./$(DAY)
 
 .PHONY: test
-test:
+test:  ## run automated tests for current day
 	$(GO) test ./$(DAY)
+
+.PHONY: bench
+bench:  ## run benchmarks for current day
+	cd $(DAY) && go test -bench=. -count=3 -benchmem -benchtime=2s -run='^#'
 
 .PHONY: all
 all:  ## build and execute all solutions
