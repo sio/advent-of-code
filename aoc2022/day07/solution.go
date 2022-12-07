@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -199,6 +200,42 @@ func part1(filename string) (result string) {
 	return strconv.Itoa(fs.SpecialSize1())
 }
 
+func FindDirs(root *FSItem, minsize int) (found []*FSItem) {
+	found = make([]*FSItem, 0)
+	for _, child := range root.Children {
+		if child.Type != Directory {
+			continue
+		}
+		found = append(found, FindDirs(child, minsize)...)
+	}
+	if root.Size() > minsize {
+		found = append(found, root)
+	}
+	return found
+}
+
+type bySize []*FSItem
+
+func (s bySize) Len() int {
+	return len(s)
+}
+func (s bySize) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s bySize) Less(i, j int) bool {
+	return s[i].Size() < s[j].Size()
+}
+
 func part2(filename string) (result string) {
-	return ""
+	fs := ParseShellOutput(filename)
+	const target = 70000000 - 30000000
+
+	size := fs.Size()
+	minDelete := size - target
+	found := FindDirs(&fs, minDelete)
+	sort.Sort(bySize(found))
+	if len(found) == 0 {
+		log.Fatalf("found no directories for part 2")
+	}
+	return strconv.Itoa(found[0].Size())
 }
