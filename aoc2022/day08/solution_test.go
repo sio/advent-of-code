@@ -9,7 +9,7 @@ const sample = "sample.txt"
 func TestSample(t *testing.T) {
 	results := []string{
 		"21",
-		"",
+		"8",
 	}
 	workers := []func(string) string{
 		part1,

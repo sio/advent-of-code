@@ -22,6 +22,11 @@ func (m *Map) Get(location Location) TreeHeight {
 	return m.grid[location]
 }
 
+func (m *Map) Exists(location Location) bool {
+	_, exists := m.grid[location]
+	return exists
+}
+
 func (m *Map) Set(location Location, value TreeHeight) {
 	if location.X > m.maxX {
 		m.maxX = location.X
@@ -92,6 +97,76 @@ func (m *Map) Visible(location Location) bool {
 	return false
 }
 
+func (m *Map) ScenicScore(location Location) uint {
+	var score uint
+	score = 1
+
+	var cursor Location
+	cursor = location
+
+	var height TreeHeight
+	height = m.Get(location)
+
+	var i, seen uint
+	seen = 0
+	for i = location.X + 1; i <= m.maxX; i++ {
+		cursor.X = i
+		cursor.Y = location.Y
+		if !m.Exists(cursor) {
+			break
+		}
+		seen++
+		if m.Get(cursor) >= height {
+			break
+		}
+	}
+	score *= seen
+
+	seen = 0
+	for i = location.X - 1; i >= 0; i-- {
+		cursor.X = i
+		cursor.Y = location.Y
+		if !m.Exists(cursor) {
+			break
+		}
+		seen++
+		if m.Get(cursor) >= height {
+			break
+		}
+	}
+	score *= seen
+
+	seen = 0
+	for i = location.Y + 1; i <= m.maxY; i++ {
+		cursor.X = location.X
+		cursor.Y = i
+		if !m.Exists(cursor) {
+			break
+		}
+		seen++
+		if m.Get(cursor) >= height {
+			break
+		}
+	}
+	score *= seen
+
+	seen = 0
+	for i = location.Y - 1; i >= 0; i-- {
+		cursor.X = location.X
+		cursor.Y = i
+		if !m.Exists(cursor) {
+			break
+		}
+		seen++
+		if m.Get(cursor) >= height {
+			break
+		}
+	}
+	score *= seen
+
+	return score
+}
+
 func ReadMap(filename string) *Map {
 	var cursor *Location
 	cursor = &Location{0, 0}
@@ -126,5 +201,13 @@ func part1(filename string) string {
 }
 
 func part2(filename string) string {
-	return ""
+	trees := ReadMap(filename)
+	var max, current uint
+	for location := range trees.grid {
+		current = trees.ScenicScore(location)
+		if current > max {
+			max = current
+		}
+	}
+	return strconv.Itoa(int(max))
 }

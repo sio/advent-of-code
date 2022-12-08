@@ -10,7 +10,7 @@ build/$(DAY): $(shell find $(DAY) -type f)  ## build solution from source code
 
 .PHONY: test
 test:  ## run automated tests for current day
-	$(GO) test ./$(DAY)
+	$(GO) test ./$(DAY) -timeout 15s
 
 .PHONY: bench
 bench:  ## run benchmarks for current day
