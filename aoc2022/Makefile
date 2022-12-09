@@ -24,6 +24,10 @@ all:  ## build and execute all solutions
 answers:  ## show answers for my puzzle inputs
 	grep --color=auto -R 'Your puzzle answer was' day*/
 
+.PHONY: fmt
+fmt:  ## format Go code
+	$(GO) fmt ./...
+
 .PHONY: stats
 stats:  ## show stats based on git history
 	@for d in $(sort $(wildcard day??)); \
