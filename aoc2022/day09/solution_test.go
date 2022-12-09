@@ -7,22 +7,21 @@ import (
 const sample = "sample.txt"
 
 func TestSample(t *testing.T) {
-	results := []string{
-		"13",
-		"",
+	tests := []struct {
+		worker func(string) string
+		input  string
+		result string
+	}{
+		{worker: part1, input: sample, result: "13"},
+		{worker: part2, input: sample, result: "1"},
+		{worker: part1, input: "sample2.txt", result: "88"},
+		{worker: part2, input: "sample2.txt", result: "36"},
 	}
-	workers := []func(string) string{
-		part1,
-		part2,
-	}
-	if len(results) != len(workers) {
-		t.Fatal("mismatch between number of worker functions and expected results")
-	}
-	for i := 0; i < len(results); i++ {
-		got := workers[i](sample)
-		expected := results[i]
+	for i, test := range tests {
+		got := test.worker(test.input)
+		expected := test.result
 		if got != expected {
-			t.Errorf("sample: part %d expected %q, got %q", i+1, expected, got)
+			t.Errorf("sample: part %d expected %q, got %q", i%2+1, expected, got)
 		}
 	}
 }
