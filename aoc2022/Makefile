@@ -2,7 +2,7 @@ DAY?=$(lastword $(sort $(wildcard day??)))
 GO?=go
 
 .PHONY: input sample
-input sample: build/$(DAY)  ## execute solution against input file or sample
+input sample sample2: build/$(DAY)  ## execute solution against input file or sample
 	$< $(DAY)/$@.txt
 
 build/$(DAY): $(shell find $(DAY) -type f)  ## build solution from source code
