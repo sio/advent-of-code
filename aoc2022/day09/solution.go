@@ -51,10 +51,9 @@ func sign(num int) int {
 }
 
 type Rope struct {
-	Head      Position
-	Next      *Rope
-	Trace     map[Position]bool
-	DebugName string
+	Head  Position
+	Next  *Rope
+	Trace map[Position]bool
 }
 
 func (r *Rope) Last() bool {
@@ -62,9 +61,6 @@ func (r *Rope) Last() bool {
 }
 
 func (r *Rope) MoveN(delta Direction, repeat int) {
-	if len(r.DebugName) != 0 {
-		fmt.Printf("--- New command for %s (%d steps) ---\n", r.DebugName, repeat)
-	}
 	if repeat < 0 {
 		panic("we don't want an endless loop!")
 	}
@@ -74,15 +70,6 @@ func (r *Rope) MoveN(delta Direction, repeat int) {
 }
 
 func (r *Rope) Move(delta Direction) {
-	if len(r.DebugName) != 0 {
-		fmt.Printf("move %s from %v\n", r.DebugName, r.Head)
-		defer func() { fmt.Printf("move %s to   %v\n", r.DebugName, r.Head) }()
-	}
-
-	if r.Last() && r.Trace == nil { // trace only last rope in the chain
-		r.Trace = make(map[Position]bool)
-		r.Trace[r.Head] = true // log initial position
-	}
 	r.Head.Move(delta)
 	if r.Last() {
 		r.Trace[r.Head] = true // log new position after move
@@ -102,18 +89,18 @@ func (r *Rope) Move(delta Direction) {
 	}
 }
 
-func NewRopeChain(size int) (head, tail *Rope) {
-	if size <= 0 {
-		panic("size must be positive")
+func NewRope(knots int) (head, tail *Rope) {
+	if knots < 2 {
+		panic("the rope must contain at least 2 knots")
 	}
 
 	tail = &Rope{}
 	tail.Trace = make(map[Position]bool)
-	tail.Trace[tail.Head] = true
+	tail.Trace[tail.Head] = true // log initial position
 
 	var next *Rope
 	next = tail
-	for i := 0; i < size; i++ {
+	for i := 0; i < knots-1; i++ {
 		head = &Rope{Next: next}
 		next = head
 	}
@@ -182,16 +169,14 @@ func (r *Rope) Print() {
 	}
 }
 
-func PlaySnake(filename string, length int) string {
+func ExecuteMoves(filename string, knots int) string {
 	motions := make(chan Motion)
 	go ReadSteps(filename, motions)
 
-	head, tail := NewRopeChain(length)
+	head, tail := NewRope(knots)
 	var debug bool
-	if length == 10 && strings.HasSuffix(filename, "sample2.txt") {
+	if knots == 10 && strings.HasSuffix(filename, "sample2.txt") {
 		debug = true
-		//head.DebugName = "HEAD"
-		//tail.DebugName = "TAIL"
 	}
 	for motion := range motions {
 		if debug {
@@ -203,9 +188,9 @@ func PlaySnake(filename string, length int) string {
 }
 
 func part1(filename string) string {
-	return PlaySnake(filename, 1)
+	return ExecuteMoves(filename, 2)
 }
 
 func part2(filename string) string {
-	return PlaySnake(filename, 10)
+	return ExecuteMoves(filename, 10)
 }
