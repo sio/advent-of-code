@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 func ReadLines(filename string) (lines chan string) {
@@ -58,7 +59,11 @@ func ReadChars(filename string) (chars chan rune) {
 func execute(part func(string) string, input string, number int) {
 	var result string
 	result = part(input)
-	fmt.Printf("Part %d result: %q\n", number, result)
+	var delimiter string
+	if strings.Contains(result, "\n") {
+		delimiter = "\n"
+	}
+	fmt.Printf("Part %d result: %s%s\n", number, delimiter, result)
 }
 
 func main() {

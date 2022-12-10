@@ -2,9 +2,19 @@ package main
 
 import (
 	"testing"
+
+	"strings"
 )
 
 const sample = "sample.txt"
+
+const part2result = `
+##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######.....`
 
 func TestSample(t *testing.T) {
 	tests := []struct {
@@ -13,13 +23,26 @@ func TestSample(t *testing.T) {
 		result string
 	}{
 		{worker: part1, input: sample, result: "13140"},
-		{worker: part2, input: sample, result: ""},
+		{worker: part2, input: sample, result: part2result},
 	}
 	for i, test := range tests {
-		got := test.worker(test.input)
-		expected := test.result
+		got := strings.TrimSpace(test.worker(test.input))
+		expected := strings.TrimSpace(test.result)
 		if got != expected {
 			t.Errorf("sample: part %d expected %q, got %q", i%2+1, expected, got)
+			if strings.Contains(got, "\n") {
+				for pos, char := range got {
+					exp := []rune(expected)[pos]
+					if char != exp {
+						t.Logf(
+							"mismatching character #%d: got %c, expected %c",
+							pos,
+							char,
+							exp,
+						)
+					}
+				}
+			}
 		}
 	}
 }

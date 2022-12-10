@@ -18,6 +18,7 @@ type CPU struct {
 	X      int
 	Cycle  int
 	Result int
+	Output strings.Builder
 }
 
 func (cpu *CPU) Execute(op Instruction, arg ...int) {
@@ -32,11 +33,42 @@ func (cpu *CPU) Execute(op Instruction, arg ...int) {
 }
 
 func (cpu *CPU) Tick() {
+	cpu.Draw()
 	cpu.Cycle++
 	if (cpu.Cycle-20)%40 == 0 && cpu.Cycle <= 220 {
-		fmt.Printf("cycle %d, register X: %d\n", cpu.Cycle, cpu.X)
+		//fmt.Printf("cycle %d, register X: %d\n", cpu.Cycle, cpu.X)
 		cpu.Result += cpu.Cycle * cpu.X
 	}
+}
+
+func (cpu *CPU) Draw() {
+	symbol := map[bool]rune{
+		true:  '#',
+		false: '.',
+	}
+	//fmt.Printf(
+	//	"cycle %d, regX value %d, output %c\n",
+	//	cpu.Cycle+1,
+	//	cpu.X,
+	//	symbol[abs(cpu.X - cpu.Cycle%40) <= 1],
+	//)
+	cpu.Output.WriteRune(
+		symbol[abs(cpu.X-cpu.Cycle%40) <= 1],
+	)
+	if (cpu.Cycle+1)%40 == 0 {
+		cpu.Output.WriteString("\n")
+	}
+
+	if (cpu.Cycle+1)%(40*6) == 0 {
+		cpu.Output.WriteString("\n")
+	}
+}
+
+func abs(num int) int {
+	if num < 0 {
+		return num * -1
+	}
+	return num
 }
 
 func (cpu *CPU) noop(arg []int) {
@@ -55,7 +87,7 @@ func (cpu *CPU) addx(arg []int) {
 	cpu.X += arg[0]
 }
 
-func Execute(script string) int {
+func Execute(script string) *CPU {
 	cpu := CPU{X: 1}
 	var command, value string
 	var parsed int
@@ -86,13 +118,15 @@ func Execute(script string) int {
 		}
 		cpu.Execute(op, arg...)
 	}
-	return cpu.Result
+	return &cpu
 }
 
 func part1(filename string) string {
-	return strconv.Itoa(Execute(filename))
+	cpu := Execute(filename)
+	return strconv.Itoa(cpu.Result)
 }
 
 func part2(filename string) string {
-	return ""
+	cpu := Execute(filename)
+	return cpu.Output.String()
 }
