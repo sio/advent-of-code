@@ -15,7 +15,7 @@ func TestSample(t *testing.T) {
 		result string
 	}{
 		{worker: part1, input: sample, result: "10605"},
-		{worker: part2, input: sample, result: ""},
+		{worker: part2, input: sample, result: "2713310158"},
 	}
 	for i, test := range tests {
 		got := strings.TrimSpace(test.worker(test.input))
