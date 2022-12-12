@@ -1,9 +1,13 @@
 DAY?=$(lastword $(sort $(wildcard day??)))
 GO?=go
 
+ifdef PROFILE
+ARGS=-cpuprofile $(DAY)/cpu.prof -memprofile $(DAY)/mem.prof
+endif
+
 .PHONY: input sample
 input sample sample2: build/$(DAY)  ## execute solution against input file or sample
-	$< $(DAY)/$@.txt
+	$< -input $(DAY)/$@.txt $(ARGS)
 
 build/$(DAY): $(shell find $(DAY) -type f)  ## build solution from source code
 	$(GO) build -o $@ ./$(DAY)

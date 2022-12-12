@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 )
 
@@ -67,20 +69,45 @@ func execute(part func(string) string, input string, number int) {
 }
 
 func main() {
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to `file`")
+	memprofile := flag.String("memprofile", "", "write memory profile to `file`")
+
+	input := flag.String("input", "input.txt", "input data for today's challenge")
 	part := flag.Int("part", 0, "puzzle part")
 	flag.Parse()
-	if flag.NArg() != 1 {
-		flag.Usage()
-		os.Exit(1)
+
+	if *cpuprofile != "" {
+		log.Printf("Writing CPU profile to %s", *cpuprofile)
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		defer f.Close() // error handling omitted for example
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
 	}
-	input := flag.Args()[0]
+	if *memprofile != "" {
+		log.Printf("Writing memory profile to %s", *cpuprofile)
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal("could not create memory profile: ", err)
+		}
+		defer f.Close() // error handling omitted for example
+		runtime.GC()    // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("could not write memory profile: ", err)
+		}
+	}
+
 	switch *part {
 	case 1:
-		execute(part1, input, 1)
+		execute(part1, *input, 1)
 	case 2:
-		execute(part2, input, 2)
+		execute(part2, *input, 2)
 	default:
-		execute(part1, input, 1)
-		execute(part2, input, 2)
+		execute(part1, *input, 1)
+		execute(part2, *input, 2)
 	}
 }
