@@ -9,7 +9,10 @@ import (
 	"strings"
 )
 
-var SkipRelief bool = false
+type Item struct {
+	Value *big.Int
+	Owner *Monkey
+}
 
 type Arithmetic int8
 
@@ -41,40 +44,46 @@ func (op *InspectOperation) Apply(old *big.Int) *big.Int {
 }
 
 type Monkey struct {
-	Items           []*big.Int
 	Business        int
 	operation       InspectOperation
 	testDivideBy    *big.Int
 	testDestination map[bool]int
 }
 
-func (m *Monkey) Catch(item *big.Int) {
-	m.Items = append(m.Items, item)
+type MonkeyGang struct {
+	Members []*Monkey
+	Items   []*Item
+	Relief  bool
 }
 
-type MonkeyGang []*Monkey
+func (gang *MonkeyGang) Transfer(item *Item, owner *Monkey) {
+	item.Owner = owner
+}
+
+func (gang *MonkeyGang) Obtain(item *Item) {
+	gang.Items = append(gang.Items, item)
+}
 
 func (gang *MonkeyGang) Play() {
 	var dest int
-	var old, item, mod, zero *big.Int
+	var mod, zero *big.Int
+	var item *Item
 	var monkey *Monkey
-	var i int
 	mod = big.NewInt(0)
 	zero = big.NewInt(0)
-	for i, monkey = range *gang {
-		for _, old = range monkey.Items {
-			item = monkey.operation.Apply(old) // inspection
+	for _, monkey = range gang.Members {
+		for _, item = range gang.Items {
+			if item.Owner != monkey {
+				continue
+			}
+			monkey.operation.Apply(item.Value) // inspection
 			monkey.Business++
-			if !SkipRelief {
-				item.Div(item, big.NewInt(3)) // relief
+			if gang.Relief {
+				item.Value.Div(item.Value, big.NewInt(3)) // relief
 			}
-			dest = monkey.testDestination[mod.Mod(item, monkey.testDivideBy).Cmp(zero) == 0]
-			(*gang)[dest].Catch(item) // throw is implied in batch when setting monkey.Items to nil
-			if SkipRelief && item.Cmp(old) < 0 {
-				panic(fmt.Sprintf("integer overflow from %d to %d", old, item))
-			}
+			dest = monkey.testDestination[mod.Mod(item.Value, monkey.testDivideBy).Cmp(zero) == 0]
+			gang.Transfer(item, gang.Members[dest])
 		}
-		monkey.Items = nil
 	}
 }
 
@@ -105,21 +114,22 @@ func (gang *MonkeyGang) Parse(line string) (err error) {
 		if err != nil {
 			return fmt.Errorf("could not parse monkey number: %w", err)
 		}
-		if value != len(*gang) {
-			return fmt.Errorf("unexpected sequence number: got Monkey %d, expected %d", value, len(*gang))
+		if value != len(gang.Members) {
+			return fmt.Errorf("unexpected sequence number: got Monkey %d, expected %d", value, len(gang.Members))
 		}
 		gang.Grow()
 
 	case strings.HasPrefix(line, PrefixItems):
 		line = line[len(PrefixItems):]
-		monkey = gang.Last()
 		for _, chunk = range strings.Split(line, " ") {
 			chunk = strings.Trim(chunk, ",")
 			value, err = strconv.Atoi(chunk)
 			if err != nil {
 				return fmt.Errorf("could not parse a starting item: %s", chunk)
 			}
-			monkey.Catch(big.NewInt(int64(value)))
+			item := &Item{Value: big.NewInt(int64(value))}
+			gang.Obtain(item)
+			gang.Transfer(item, gang.Last())
 		}
 
 	case strings.HasPrefix(line, PrefixOperation):
@@ -182,19 +192,26 @@ func (gang *MonkeyGang) Parse(line string) (err error) {
 }
 
 func (gang *MonkeyGang) Print() {
-	for index, monkey := range *gang {
-		fmt.Printf("Monkey %d holds %v [business=%d]\n", index, monkey.Items, monkey.Business)
+	for index, monkey := range gang.Members {
+		fmt.Printf("Monkey %d [business=%d] holds: ", index, monkey.Business)
+		for _, item := range gang.Items {
+			if item.Owner != monkey {
+				continue
+			}
+			fmt.Printf("%d ", item.Value)
+		}
+		fmt.Println()
 	}
 }
 
 func (gang *MonkeyGang) Grow() {
 	m := &Monkey{}
 	m.testDestination = make(map[bool]int)
-	(*gang) = append(*gang, m)
+	gang.Members = append(gang.Members, m)
 }
 
 func (gang *MonkeyGang) Last() *Monkey {
-	return (*gang)[len(*gang)-1]
+	return gang.Members[len(gang.Members)-1]
 }
 
 func ReadMonkeyGang(filename string) *MonkeyGang {
@@ -211,27 +228,27 @@ func ReadMonkeyGang(filename string) *MonkeyGang {
 
 func part1(filename string) string {
 	gang := *ReadMonkeyGang(filename)
-	gang.Print()
+	gang.Relief = true
 	for i := 0; i < 20; i++ {
 		gang.Play()
-		gang.Print()
 	}
-	sort.Slice(gang, func(i, j int) bool {
-		return gang[i].Business > gang[j].Business
+	monkeys := gang.Members
+	sort.Slice(monkeys, func(i, j int) bool {
+		return monkeys[i].Business > monkeys[j].Business
 	})
-	return strconv.Itoa(gang[0].Business * gang[1].Business)
+	return strconv.Itoa(monkeys[0].Business * monkeys[1].Business)
 }
 
 func part2(filename string) string {
-	return ""
 	gang := *ReadMonkeyGang(filename)
-	SkipRelief = true
+	gang.Relief = false
 	for i := 0; i < 1000; i++ {
 		gang.Play()
 	}
-	//gang.Print()
-	sort.Slice(gang, func(i, j int) bool {
-		return gang[i].Business > gang[j].Business
+	gang.Print()
+	monkeys := gang.Members
+	sort.Slice(monkeys, func(i, j int) bool {
+		return monkeys[i].Business > monkeys[j].Business
 	})
-	return strconv.Itoa(gang[0].Business * gang[1].Business)
+	return strconv.Itoa(monkeys[0].Business * monkeys[1].Business)
 }
