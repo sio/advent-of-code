@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 )
 
 type Item struct {
-	Value *big.Int
+	Value int64
 	Owner *Monkey
 }
 
@@ -23,37 +22,38 @@ const (
 
 type InspectOperation struct {
 	action Arithmetic
-	arg    *big.Int
+	arg    int64
 	self   bool
 }
 
-func (op *InspectOperation) Apply(old *big.Int) *big.Int {
-	var arg *big.Int
+func (op *InspectOperation) Apply(item *Item) {
+	var arg int64
 	arg = op.arg
 	if op.self {
-		arg = old
+		arg = item.Value
 	}
 	switch op.action {
 	default:
 		panic(fmt.Sprintf("Apply() not implemented for action %b", op.action))
 	case Add:
-		return old.Add(old, arg)
+		item.Value += arg
 	case Multiply:
-		return old.Mul(old, arg)
+		item.Value *= arg
 	}
 }
 
 type Monkey struct {
-	Business        int
-	operation       InspectOperation
-	testDivideBy    *big.Int
-	testDestination map[bool]int
+	Business    int
+	Inspection  InspectOperation
+	DivideBy    int64
+	Destination map[bool]int
 }
 
 type MonkeyGang struct {
 	Members []*Monkey
 	Items   []*Item
 	Relief  bool
+	Divisor int64
 }
 
 func (gang *MonkeyGang) Transfer(item *Item, owner *Monkey) {
@@ -66,22 +66,20 @@ func (gang *MonkeyGang) Obtain(item *Item) {
 
 func (gang *MonkeyGang) Play() {
 	var dest int
-	var mod, zero *big.Int
 	var item *Item
 	var monkey *Monkey
-	mod = big.NewInt(0)
-	zero = big.NewInt(0)
 	for _, monkey = range gang.Members {
 		for _, item = range gang.Items {
 			if item.Owner != monkey {
 				continue
 			}
-			monkey.operation.Apply(item.Value) // inspection
 			monkey.Business++
+			monkey.Inspection.Apply(item)
 			if gang.Relief {
-				item.Value.Div(item.Value, big.NewInt(3)) // relief
+				item.Value /= 3 // relief
 			}
-			dest = monkey.testDestination[mod.Mod(item.Value, monkey.testDivideBy).Cmp(zero) == 0]
+			item.Value = item.Value % gang.Divisor
+			dest = monkey.Destination[item.Value%monkey.DivideBy == 0]
 			gang.Transfer(item, gang.Members[dest])
 		}
 	}
@@ -127,7 +125,7 @@ func (gang *MonkeyGang) Parse(line string) (err error) {
 			if err != nil {
 				return fmt.Errorf("could not parse a starting item: %s", chunk)
 			}
-			item := &Item{Value: big.NewInt(int64(value))}
+			item := &Item{Value: int64(value)}
 			gang.Obtain(item)
 			gang.Transfer(item, gang.Last())
 		}
@@ -138,7 +136,7 @@ func (gang *MonkeyGang) Parse(line string) (err error) {
 		var chunks []string
 		chunks = strings.Split(line, " ")
 		if len(chunks) != 2 {
-			return fmt.Errorf("unexpected operation formula: %s (%d words)", line, len(chunks))
+			return fmt.Errorf("unexpected inspection formula: %s (%d words)", line, len(chunks))
 		}
 		ops := map[string]Arithmetic{
 			"+": Add,
@@ -148,17 +146,17 @@ func (gang *MonkeyGang) Parse(line string) (err error) {
 		if !found {
 			return fmt.Errorf("unsupported arithmetic operation: %s", chunks[0])
 		}
-		monkey.operation = InspectOperation{
+		monkey.Inspection = InspectOperation{
 			action: action,
 		}
 		if chunks[1] == "old" {
-			monkey.operation.self = true
+			monkey.Inspection.self = true
 		} else {
 			value, err = strconv.Atoi(chunks[1])
 			if err != nil {
 				return fmt.Errorf("could not parse arithmetic argument: %w", err)
 			}
-			monkey.operation.arg = big.NewInt(int64(value))
+			monkey.Inspection.arg = int64(value)
 		}
 
 	case strings.HasPrefix(line, PrefixTest):
@@ -168,7 +166,7 @@ func (gang *MonkeyGang) Parse(line string) (err error) {
 		if err != nil {
 			return fmt.Errorf("cannot parse number: %s", line)
 		}
-		monkey.testDivideBy = big.NewInt(int64(value))
+		monkey.DivideBy = int64(value)
 
 	case strings.HasPrefix(line, PrefixTestTrue):
 		line = line[len(PrefixTestTrue):]
@@ -177,7 +175,7 @@ func (gang *MonkeyGang) Parse(line string) (err error) {
 		if err != nil {
 			return fmt.Errorf("cannot parse number: %s", line)
 		}
-		monkey.testDestination[true] = value
+		monkey.Destination[true] = value
 
 	case strings.HasPrefix(line, PrefixTestFalse):
 		line = line[len(PrefixTestFalse):]
@@ -186,12 +184,13 @@ func (gang *MonkeyGang) Parse(line string) (err error) {
 		if err != nil {
 			return fmt.Errorf("cannot parse number: %s", line)
 		}
-		monkey.testDestination[false] = value
+		monkey.Destination[false] = value
 	}
 	return nil
 }
 
 func (gang *MonkeyGang) Print() {
+	fmt.Printf("Divisor: %d\n", gang.Divisor)
 	for index, monkey := range gang.Members {
 		fmt.Printf("Monkey %d [business=%d] holds: ", index, monkey.Business)
 		for _, item := range gang.Items {
@@ -206,7 +205,7 @@ func (gang *MonkeyGang) Print() {
 
 func (gang *MonkeyGang) Grow() {
 	m := &Monkey{}
-	m.testDestination = make(map[bool]int)
+	m.Destination = make(map[bool]int)
 	gang.Members = append(gang.Members, m)
 }
 
@@ -223,32 +222,40 @@ func ReadMonkeyGang(filename string) *MonkeyGang {
 			log.Fatalf("%q: %v", line, err)
 		}
 	}
+	multipliers := make(map[int64]bool)
+	for _, monkey := range gang.Members {
+		multipliers[monkey.DivideBy] = true
+	}
+	if gang.Divisor == 0 {
+		gang.Divisor = 1
+	}
+	for key, _ := range multipliers {
+		gang.Divisor *= key
+	}
 	return gang
 }
 
-func part1(filename string) string {
-	gang := *ReadMonkeyGang(filename)
-	gang.Relief = true
-	for i := 0; i < 20; i++ {
+func (gang *MonkeyGang) PlayN(rounds int, relief bool, debug bool) int {
+	gang.Relief = relief
+	for i := 0; i < rounds; i++ {
 		gang.Play()
+	}
+	if debug {
+		gang.Print()
 	}
 	monkeys := gang.Members
 	sort.Slice(monkeys, func(i, j int) bool {
 		return monkeys[i].Business > monkeys[j].Business
 	})
-	return strconv.Itoa(monkeys[0].Business * monkeys[1].Business)
+	return monkeys[0].Business * monkeys[1].Business
+}
+
+func part1(filename string) string {
+	gang := ReadMonkeyGang(filename)
+	return strconv.Itoa(gang.PlayN(20, true, false))
 }
 
 func part2(filename string) string {
-	gang := *ReadMonkeyGang(filename)
-	gang.Relief = false
-	for i := 0; i < 1000; i++ {
-		gang.Play()
-	}
-	gang.Print()
-	monkeys := gang.Members
-	sort.Slice(monkeys, func(i, j int) bool {
-		return monkeys[i].Business > monkeys[j].Business
-	})
-	return strconv.Itoa(monkeys[0].Business * monkeys[1].Business)
+	gang := ReadMonkeyGang(filename)
+	return strconv.Itoa(gang.PlayN(10000, false, false))
 }
