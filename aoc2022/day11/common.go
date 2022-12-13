@@ -75,6 +75,12 @@ func main() {
 	input := flag.String("input", "input.txt", "input data for today's challenge")
 	part := flag.Int("part", 0, "puzzle part")
 	flag.Parse()
+	if flag.NArg() > 1 {
+		log.Fatalf("unparsed command arguments left: %v", flag.NArg())
+	}
+	if flag.NArg() == 1 {
+		*input = flag.Args()[0]
+	}
 
 	if *cpuprofile != "" {
 		log.Printf("Writing CPU profile to %s", *cpuprofile)

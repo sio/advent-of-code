@@ -7,7 +7,7 @@ endif
 
 .PHONY: input sample
 input sample sample2: build/$(DAY)  ## execute solution against input file or sample
-	$< -input $(DAY)/$@.txt $(ARGS)
+	$< $(DAY)/$@.txt $(ARGS)
 
 build/$(DAY): $(shell find $(DAY) -type f)  ## build solution from source code
 	$(GO) build -o $@ ./$(DAY)
