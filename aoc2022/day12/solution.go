@@ -6,6 +6,8 @@ import (
 	"strconv"
 )
 
+const unreachable = int(^uint(0) >> 1) // max int
+
 type Point struct {
 	X, Y int
 }
@@ -61,8 +63,9 @@ func (m *Map) Print() {
 	}
 }
 
-func (m *Map) Route() {
+func (m *Map) Route(from, to Point) int {
 	unvisited := make(map[Point]bool)
+	m.distance = make(map[Point]int)
 
 	var cursor, pos, next Point
 	for pos = range m.Height {
@@ -71,7 +74,7 @@ func (m *Map) Route() {
 
 	var dist int
 	var found, first bool
-	cursor = m.Start
+	cursor = from
 	for {
 		m.visit(cursor)
 		delete(unvisited, cursor)
@@ -93,14 +96,21 @@ func (m *Map) Route() {
 				next = pos
 			}
 		}
-		if next == m.Finish {
+		if next == to {
 			break
 		}
 		if next == cursor {
-			panic(fmt.Sprintf("entering endless loop current=next=(%d,%d)", next.X, next.Y))
+			//log.Printf(
+			//	"Breaking endless loop from (%d,%d) to (%d,%d): cursor=next=(%d,%d)",
+			//	from.X, from.Y,
+			//	to.X, to.Y,
+			//	next.X, next.Y,
+			//)
+			return unreachable
 		}
 		cursor = next
 	}
+	return m.distance[to]
 }
 
 func (m *Map) visit(cursor Point) {
@@ -142,7 +152,6 @@ func (m *Map) visit(cursor Point) {
 func NewMap() *Map {
 	m := &Map{}
 	m.Height = make(map[Point]rune)
-	m.distance = make(map[Point]int)
 	return m
 }
 
@@ -178,10 +187,24 @@ func part1(filename string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	area.Route()
-	return strconv.Itoa(area.distance[area.Finish])
+	trail := area.Route(area.Start, area.Finish)
+	return strconv.Itoa(trail)
 }
 
 func part2(filename string) string {
-	return ""
+	area, err := ParseArea(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var min, trail int
+	for start, height := range area.Height {
+		if height != 'a' {
+			continue
+		}
+		trail = area.Route(start, area.Finish)
+		if trail < min || min == 0 {
+			min = trail
+		}
+	}
+	return strconv.Itoa(min)
 }
