@@ -9,7 +9,9 @@ endif
 input sample sample2: build/$(DAY)  ## execute solution against input file or sample
 	$< $(DAY)/$@.txt $(ARGS)
 
-build/$(DAY): $(shell find $(DAY) -type f)  ## build solution from source code
+.PHONY: build
+build: build/$(DAY)  ## build solution from source code
+build/$(DAY): $(shell find $(DAY) -type f)
 	$(GO) build -o $@ ./$(DAY)
 
 .PHONY: test
