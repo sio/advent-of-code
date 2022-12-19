@@ -16,7 +16,7 @@ func TestSample(t *testing.T) {
 		result string
 	}{
 		{worker: part1, input: sample, result: "13"},
-		{worker: part2, input: sample, result: ""},
+		{worker: part2, input: sample, result: "140"},
 		{worker: part1, input: "sample2.txt", result: strconv.Itoa(0 + 3)},
 	}
 	for i, test := range tests {

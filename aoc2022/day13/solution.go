@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -214,6 +215,63 @@ func part1(filename string) string {
 	return strconv.Itoa(result)
 }
 
+type Packets []*NestedList
+
+func (p Packets) Len() int {
+	return len(p)
+}
+
+func (p Packets) Less(i, j int) bool {
+	return p[i].Compare(p[j]) == Less
+}
+
+func (p Packets) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+// Packets slice must be sorted beforehand!
+func (p Packets) Find(needle ...*NestedList) (result int) {
+	targets := Packets(needle)
+	sort.Sort(targets)
+
+	var targetIndex int = 0
+	result = 1
+	for index, packet := range p {
+		if packet == targets[targetIndex] {
+			targetIndex++
+			result *= index + 1
+			if targetIndex >= len(targets) {
+				break
+			}
+		}
+	}
+	return result
+}
+
 func part2(filename string) string {
-	return ""
+	var Needle [2]*NestedList
+	for index, line := range []string{
+		"[[2]]",
+		"[[6]]",
+	} {
+		Needle[index] = &NestedList{}
+		Needle[index].Parse(line)
+	}
+
+	packets := Packets(Needle[:])
+	var p *NestedList
+	for line := range ReadLines(filename) {
+		if len(line) == 0 {
+			continue
+		}
+		p = &NestedList{}
+		p.Parse(line)
+		packets = append(packets, p)
+		//fmt.Printf("Got %d packets, latest: %s\n", packets.Len(), p)
+	}
+	sort.Sort(packets)
+
+	var result int
+	result = packets.Find(Needle[:]...)
+	return strconv.Itoa(result)
 }
