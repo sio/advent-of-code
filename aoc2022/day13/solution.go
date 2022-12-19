@@ -40,33 +40,42 @@ func IntCompare(a, b int) int {
 }
 
 func (this *NestedList) Compare(other *NestedList) int {
+	//fmt.Printf("comparing %s vs %s\n", this, other)
 	if !this.Nested && !other.Nested {
+		//fmt.Println("ret 1")
 		return IntCompare(this.Value, other.Value)
 	}
 	if !this.Nested && other.Nested {
 		if len(other.Items) == 0 {
+			//fmt.Println("ret 2")
 			return Greater
 		}
-		return IntCompare(this.Value, other.Items[0].Value)
+		//fmt.Println("ret 3")
+		return this.Compare(other.Items[0])
 	}
 	if this.Nested && !other.Nested {
+		//fmt.Println("ret 4")
 		return other.Compare(this) * -1
 	}
 	var item *NestedList
 	var index, result int
 	for index, item = range this.Items {
 		if index >= len(other.Items) {
+			//fmt.Println("ret 5")
 			return Greater
 		}
 		result = item.Compare(other.Items[index])
 		if result != Equal {
+			//fmt.Println("ret 6")
 			return result
 		}
 	}
 	switch {
 	case len(this.Items) < len(other.Items):
+		//fmt.Println("ret 7")
 		return Less
 	case len(this.Items) == len(other.Items):
+		//fmt.Println("ret 8")
 		return Equal
 	default:
 		panic("impossible branching")
@@ -185,17 +194,14 @@ func part1(filename string) string {
 		index++
 		if index > 1 {
 			compare = pair[0].Compare(pair[1])
-			if compare != -1*pair[1].Compare(pair[0]) {
-				fmt.Printf("Asymmetric results for %s <> %s\n", pair[0], pair[1])
-			}
-			fmt.Printf("#%03d: ", pairIndex)
+			//fmt.Printf("#%03d: ", pairIndex)
 			if compare == Less {
 				result += pairIndex
-				fmt.Printf("  correct ")
+				//fmt.Printf("  correct ")
 			} else {
-				fmt.Printf("incorrect ")
+				//fmt.Printf("incorrect ")
 			}
-			fmt.Printf(": %s\n                  %s (%d)\n", pair[0], pair[1], compare)
+			//fmt.Printf(": %s\n                  %s (%d)\n", pair[0], pair[1], compare)
 		}
 	}
 	return strconv.Itoa(result)
