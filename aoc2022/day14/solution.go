@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -58,6 +59,7 @@ type Map struct {
 	tiles  map[Point]Tile
 	area   *Rectangle
 	recent Point
+	floor  int
 }
 
 func (m *Map) Draw() string {
@@ -74,7 +76,7 @@ func (m *Map) DrawRectangle(r *Rectangle) string {
 	var x, y int
 	for y = r.TopLeft.Y; y <= r.BottomRight.Y; y++ {
 		for x = r.TopLeft.X; x <= r.BottomRight.X; x++ {
-			build.WriteRune(symbols[m.tiles[Point{x, y}]])
+			build.WriteRune(symbols[m.Read(Point{x, y})])
 		}
 		build.WriteString("\n")
 	}
@@ -87,6 +89,13 @@ func (m *Map) DrawRecent(size int) string {
 		BottomRight: Point{m.recent.X + size/2, m.recent.Y + size/2},
 	}
 	return m.DrawRectangle(recent)
+}
+
+func (m *Map) Read(place Point) Tile {
+	if place.Y == m.floor {
+		return Rock
+	}
+	return m.tiles[place]
 }
 
 func (m *Map) Fill(place Point, value Tile) {
@@ -109,6 +118,29 @@ func (m *Map) Fill(place Point, value Tile) {
 	m.recent = place
 }
 
+func (m *Map) AddFloor(delta int) {
+	if m.floor != 0 {
+		return
+	}
+	m.floor = m.area.BottomRight.Y + 2
+	m.area.BottomRight.Y = m.floor
+}
+
+func (m *Map) PourSand(from Point) (count int) {
+	var ok bool
+	for {
+		ok = m.DropSand(from)
+		if !ok {
+			break
+		}
+		count++
+		if false { // debug
+			fmt.Printf("\n--- Sandbag #%d ---\n%s\n", count, m.Draw())
+		}
+	}
+	return count
+}
+
 func (m *Map) DropSand(from Point) (ok bool) {
 	m.Fill(from, m.tiles[from]) // extend map area to include sand source
 	if m.tiles[from] != Air {
@@ -127,10 +159,10 @@ func (m *Map) DropSand(from Point) (ok bool) {
 	var moved bool
 	for {
 		for _, step := range steps {
-			if m.tiles[sand.Neighbor(step)] == Air {
+			if m.Read(sand.Neighbor(step)) == Air {
 				sand.Move(step)
 				moved = true
-				if !m.area.Contains(sand) {
+				if m.floor == 0 && !m.area.Contains(sand) {
 					return false
 				}
 				break
@@ -198,36 +230,30 @@ func sign(value int) int {
 	}
 }
 
-func part1(filename string) string {
+func ReadCave(filename string) (*Map, error) {
 	cave := &Map{}
 
 	var err error
 	err = cave.FromFile(filename)
 	if err != nil {
-		return fmt.Sprintf("could not parse file: %v\n", err)
+		return nil, fmt.Errorf("could not parse file: %v\n", err)
 	}
+	return cave, nil
+}
 
-	var ok bool
-	var steps int
-	for {
-		ok = cave.DropSand(Point{500, 0})
-		if !ok {
-			break
-		}
-		steps++
-		if false { // debug
-			fmt.Printf("\n--- Sandbag #%d ---\n%s\n", steps, cave.Draw())
-		}
+func part1(filename string) string {
+	cave, err := ReadCave(filename)
+	if err != nil {
+		log.Fatalf("%v", err)
 	}
-	var sum int
-	for _, tile := range cave.tiles {
-		if tile == Sand {
-			sum++
-		}
-	}
-	return strconv.Itoa(steps)
+	return strconv.Itoa(cave.PourSand(Point{500, 0}))
 }
 
 func part2(filename string) string {
-	return ""
+	cave, err := ReadCave(filename)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	cave.AddFloor(2)
+	return strconv.Itoa(cave.PourSand(Point{500, 0}))
 }
