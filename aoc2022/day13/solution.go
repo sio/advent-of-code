@@ -171,13 +171,11 @@ func part1(filename string) string {
 	var index, pairIndex, result, compare int
 	for line := range ReadLines(filename) {
 		if len(line) == 0 {
-			pairIndex++
-			index = 0
-			compare = pair[0].Compare(pair[1])
-			if compare < 1 {
-				result += pairIndex
-			}
 			continue
+		}
+		if index > 1 || pairIndex == 0 {
+			index = 0
+			pairIndex++
 		}
 		pair[index] = &NestedList{}
 		err = pair[index].Parse(line)
@@ -185,6 +183,20 @@ func part1(filename string) string {
 			return fmt.Sprintf("parsing failed: %v", err)
 		}
 		index++
+		if index > 1 {
+			compare = pair[0].Compare(pair[1])
+			if compare != -1*pair[1].Compare(pair[0]) {
+				fmt.Printf("Asymmetric results for %s <> %s\n", pair[0], pair[1])
+			}
+			fmt.Printf("#%03d: ", pairIndex)
+			if compare == Less {
+				result += pairIndex
+				fmt.Printf("  correct ")
+			} else {
+				fmt.Printf("incorrect ")
+			}
+			fmt.Printf(": %s\n                  %s (%d)\n", pair[0], pair[1], compare)
+		}
 	}
 	return strconv.Itoa(result)
 }
