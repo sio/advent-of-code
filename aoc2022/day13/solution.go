@@ -39,7 +39,7 @@ func IntCompare(a, b int) int {
 	}
 }
 
-func (this *NestedList) Compare(other *NestedList) int {
+func (this *NestedList) Compare(other *NestedList) (result int) {
 	//fmt.Printf("comparing %s vs %s\n", this, other)
 	if !this.Nested && !other.Nested {
 		//fmt.Println("ret 1")
@@ -50,15 +50,22 @@ func (this *NestedList) Compare(other *NestedList) int {
 			//fmt.Println("ret 2")
 			return Greater
 		}
-		//fmt.Println("ret 3")
-		return this.Compare(other.Items[0])
+		result = this.Compare(other.Items[0])
+		if result != Equal {
+			//fmt.Println("ret 3")
+			return result
+		}
+		if len(other.Items) > 1 {
+			return Less
+		}
+		return Equal
 	}
 	if this.Nested && !other.Nested {
 		//fmt.Println("ret 4")
 		return other.Compare(this) * -1
 	}
 	var item *NestedList
-	var index, result int
+	var index int
 	for index, item = range this.Items {
 		if index >= len(other.Items) {
 			//fmt.Println("ret 5")
