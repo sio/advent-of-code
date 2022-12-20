@@ -49,9 +49,6 @@ func (g *Graph) Distance(a, b *Valve) int {
 		//fmt.Println("--short circuit")
 		return 0
 	}
-	if a.Rate == 0 || b.Rate == 0 {
-		panic(fmt.Sprintf("we assumed that zero-flow valves are not interesting!"))
-	}
 	if g.distance == nil {
 		g.distance = make(map[[2]string]int)
 	}
@@ -119,9 +116,6 @@ func (g *Graph) Distance(a, b *Valve) int {
 	value = 0
 	found = false
 	for _, valve = range g.nodes { // remember all distances from node a
-		if valve.Rate == 0 {
-			continue // this is noise, we will never want to fetch such values
-		}
 		names = [...]string{a.Name, valve.Name}
 		sort.Strings(names[:])
 		g.distance[names] = distance[valve.Name]
@@ -141,38 +135,45 @@ func (g *Graph) Search(from string, depth int) int {
 	if !ok {
 		panic(fmt.Sprintf("Starting node %s not found in graph!", from))
 	}
-	g.DFS(start, depth, make(map[string]bool), Valves{}, 0)
+	g.DFS(start, depth, Valves{}, 0)
 	return g.MaxReward
 }
 
-func (g *Graph) DFS(start *Valve, limit int, visited map[string]bool, open Valves, collected int) {
-	fmt.Printf("Top: %d | Position %s, %d remaining, open: %v, reward %d\n", g.MaxReward, start.Name, limit, open, collected)
+func (g *Graph) DFS(start *Valve, limit int, open Valves, collected int) {
+	//fmt.Printf("Top: %4d | Position %s, %d remaining, open: %v, reward %d\n", g.MaxReward, start.Name, limit, open, collected)
 
 	// termination condition
+	if limit < 0 {
+		return // do not save impossible results
+	}
+	if collected > g.MaxReward {
+		//fmt.Printf("  %04d: open valves %v\n", collected, open)
+		g.MaxReward = collected
+	}
 	if limit == 0 {
-		if collected > g.MaxReward {
-			fmt.Printf("  %04d: open valves %v\n", collected, open)
-			g.MaxReward = collected
-		}
-		fmt.Println("  ran out of time")
-		return
+		return // exit after saving results
 	}
 
 	// early exit
 	if collected+g.RewardCeiling(limit, open) <= g.MaxReward {
-		fmt.Println("  this path will not win")
+		//fmt.Println("  this path will not win")
 		return
 	}
 
-	limit--
 	if start.Rate != 0 && !open.Contains(start) { // try opening this valve
-		g.DFS(start, limit, visited, open.Add(start), collected+start.Rate*limit)
+		//fmt.Printf("          | opening %v, reward %d\n", start, start.Rate*(limit-1))
+		g.DFS(start, limit-1, open.Add(start), collected+start.Rate*(limit-1))
 	}
 	var valve *Valve
-	for _, valve = range g.nodes { // try going to other valves instead
-		g.DFS(valve, limit, visited, open, collected)
+	var distance int
+	for _, valve = range g.nodes { // try going to other important valves instead
+		if valve.Rate == 0 || open.Contains(valve) || valve == start {
+			continue
+		}
+		distance = g.Distance(start, valve)
+		//fmt.Printf("          | moving to %v\n", valve)
+		g.DFS(valve, limit-distance, open, collected)
 	}
-	visited[start.Name] = true
 }
 
 func (g *Graph) RewardCeiling(limit int, open Valves) (max int) {
@@ -204,6 +205,16 @@ func (g *Graph) GetOrCreate(name string) *Valve {
 	return valve
 }
 
+func (g *Graph) ParseFile(filename string) (err error) {
+	for line := range ReadLines(filename) {
+		err = g.Parse(line)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (g *Graph) Parse(line string) (err error) {
 	var chunks []string
 	chunks = valveFormat.FindStringSubmatch(line)
@@ -230,18 +241,16 @@ func (g *Graph) Parse(line string) (err error) {
 func part1(filename string) string {
 	var err error
 	tunnels := &Graph{}
-	for line := range ReadLines(filename) {
-		err = tunnels.Parse(line)
-		if err != nil {
-			log.Fatal(err)
-		}
+	err = tunnels.ParseFile(filename)
+	if err != nil {
+		log.Fatal(err)
 	}
-	var from, to *Valve
-	from, _ = tunnels.Get("CC")
-	to, _ = tunnels.Get("EE")
-	fmt.Println(tunnels.Distance(from, to))
-	//return strconv.Itoa(tunnels.Search("AA", 30))
-	return ""
+	//var from, to *Valve
+	//from, _ = tunnels.Get("CC")
+	//to, _ = tunnels.Get("EE")
+	//fmt.Println(tunnels.Distance(from, to))
+	//return ""
+	return strconv.Itoa(tunnels.Search("AA", 30))
 }
 
 func part2(filename string) string {
