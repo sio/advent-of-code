@@ -92,7 +92,7 @@ func (m *Map) DrawRecent(size int) string {
 }
 
 func (m *Map) Read(place Point) Tile {
-	if place.Y == m.floor {
+	if m.floor != 0 && place.Y == m.floor {
 		return Rock
 	}
 	return m.tiles[place]
