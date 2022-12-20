@@ -155,19 +155,15 @@ func (m *Map) Draw() string {
 			}
 			b.WriteRune(tile)
 		}
+		b.WriteRune('\n')
 	}
 	return b.String()
 }
 
 func part1(filename string) string {
-	row, found := map[string]int{
-		"day15/input.txt":  2000000,
-		"input.txt":        2000000,
-		"day15/sample.txt": 10,
-		"sample.txt":       10,
-	}[filename]
-	if !found {
-		log.Fatalf("no target hardcoded for %s", filename)
+	row := 2000000
+	if strings.HasSuffix(filename, "sample.txt") {
+		row = 10
 	}
 	fmt.Printf("Checking row %d\n", row)
 
@@ -179,7 +175,7 @@ func part1(filename string) string {
 			log.Fatalf("could not parse line: %q: %v", line, err)
 		}
 	}
-	if filename == "sample.txt" {
+	if row == 10 {
 		fmt.Println(cave.Draw())
 	}
 	return strconv.Itoa(cave.CountCovered(row))
