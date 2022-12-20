@@ -12,6 +12,43 @@ type Point struct {
 	X, Y int
 }
 
+type PointIterator struct {
+	Value  Point
+	center Point
+	radius int
+	active bool
+	deltaX int
+	signY  int
+}
+
+func (p Point) Perimeter(radius int) *PointIterator {
+	iter := &PointIterator{center: p, radius: radius}
+	return iter
+}
+
+func (iter *PointIterator) Next() bool {
+	if !iter.active { // loop initialization
+		iter.signY = -1
+		iter.deltaX = iter.radius * -1
+		iter.active = true
+	}
+	if iter.deltaX > iter.radius && iter.signY == 1 { // loop termination
+		iter.active = false
+		return false
+	}
+	if iter.deltaX > iter.radius { // start second half circle
+		iter.signY = 1
+		iter.deltaX = iter.radius * -1
+	}
+	iter.Value.X = iter.center.X + iter.deltaX
+	iter.Value.Y = iter.center.Y + iter.signY*(iter.radius-abs(iter.deltaX))
+	if iter.Value.Distance(iter.center) != iter.radius {
+		panic(fmt.Sprintf("point %v outside of perimeter %d for %v", iter.Value, iter.radius, iter.center))
+	}
+	iter.deltaX++
+	return true
+}
+
 type Rectangle struct {
 	Min Point // top left corner
 	Max Point // bottom right corner
@@ -93,29 +130,32 @@ func (m *Map) CountCovered(row int) (count int) {
 	return count
 }
 
+// Beacon must be just one step out of reach of existing beacons
+//
+// I could not figure that out on my own, used Reddit for help (cheating)
 func (m *Map) Search(min, max int) (Point, error) {
-	var x, y int
-	var cursor Point
+	var sensor *Sensor
 	var found bool
-	var seen int
-	for x = Max(min, m.bounds.Min.X); x <= Min(max, m.bounds.Max.X) && !found; x++ {
-		for y = Max(min, m.bounds.Min.Y); y <= Min(max, m.bounds.Max.Y) && !found; y++ {
-			cursor.X = x
-			cursor.Y = y
-			if !m.occupied[cursor] && !m.Covered(cursor) {
+	var iter *PointIterator
+	for _, sensor = range m.sensors {
+		iter = sensor.Location.Perimeter(sensor.Radius() + 1)
+		for !found && iter.Next() {
+			if iter.Value.X < min || iter.Value.X > max || iter.Value.Y < min || iter.Value.Y > max {
+				continue
+			}
+			if !m.occupied[iter.Value] && !m.Covered(iter.Value) {
 				found = true // we assume that only one beacon location is possible
-				fmt.Printf("Found beacon: %v\n", cursor)
+				fmt.Printf("Found beacon: %v\n", iter.Value)
 			}
-			seen++
-			if seen%1000 == 0 {
-				fmt.Printf("\rchecked %d locations", seen)
-			}
+		}
+		if found {
+			break
 		}
 	}
 	if !found {
 		return Point{}, fmt.Errorf("beacon not found in area from (%d,%d) to (%d,%d)", min, min, max, max)
 	}
-	return cursor, nil
+	return iter.Value, nil
 }
 
 func Min(a, b int) int {
