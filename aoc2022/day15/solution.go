@@ -69,7 +69,7 @@ func (s *Sensor) Covers(p Point) bool {
 type Map struct {
 	sensors  []*Sensor
 	occupied map[Point]bool
-	known    Rectangle
+	bounds   Rectangle
 }
 
 // Check whether a point is covered by existing sensors
@@ -85,12 +85,51 @@ func (m *Map) Covered(p Point) bool {
 
 func (m *Map) CountCovered(row int) (count int) {
 	var x int
-	for x = m.known.Min.X; x <= m.known.Max.X; x++ {
+	for x = m.bounds.Min.X; x <= m.bounds.Max.X; x++ {
 		if m.Covered(Point{x, row}) {
 			count++
 		}
 	}
 	return count
+}
+
+func (m *Map) Search(min, max int) (Point, error) {
+	var x, y int
+	var cursor Point
+	var found bool
+	var seen int
+	for x = Max(min, m.bounds.Min.X); x <= Min(max, m.bounds.Max.X) && !found; x++ {
+		for y = Max(min, m.bounds.Min.Y); y <= Min(max, m.bounds.Max.Y) && !found; y++ {
+			cursor.X = x
+			cursor.Y = y
+			if !m.occupied[cursor] && !m.Covered(cursor) {
+				found = true // we assume that only one beacon location is possible
+				fmt.Printf("Found beacon: %v\n", cursor)
+			}
+			seen++
+			if seen%1000 == 0 {
+				fmt.Printf("\rchecked %d locations", seen)
+			}
+		}
+	}
+	if !found {
+		return Point{}, fmt.Errorf("beacon not found in area from (%d,%d) to (%d,%d)", min, min, max, max)
+	}
+	return cursor, nil
+}
+
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func Max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 var LogFormat = regexp.MustCompile(`^Sensor at x=([0-9-]+), y=([0-9-]+): closest beacon is at x=([0-9-]+), y=([0-9-]+)$`)
@@ -123,10 +162,10 @@ func (m *Map) AddSensor(s *Sensor) {
 	if m.occupied == nil {
 		m.occupied = make(map[Point]bool)
 	}
-	//m.occupied[s.Location] = true
+	m.occupied[s.Location] = true
 	m.occupied[s.Beacon] = true
-	m.known.ExtendRadius(s.Location, s.Radius())
-	m.known.Extend(s.Beacon)
+	m.bounds.ExtendRadius(s.Location, s.Radius())
+	m.bounds.Extend(s.Beacon)
 }
 
 func (m *Map) Draw() string {
@@ -141,8 +180,8 @@ func (m *Map) Draw() string {
 	}
 	var b strings.Builder
 	var cursor Point
-	for y := m.known.Min.Y; y <= m.known.Max.Y; y++ {
-		for x := m.known.Min.X; x <= m.known.Max.X; x++ {
+	for y := m.bounds.Min.Y; y <= m.bounds.Max.Y; y++ {
+		for x := m.bounds.Min.X; x <= m.bounds.Max.X; x++ {
 			cursor.X = x
 			cursor.Y = y
 			tile, found := tiles[cursor]
@@ -182,5 +221,27 @@ func part1(filename string) string {
 }
 
 func part2(filename string) string {
-	return ""
+	var min, max int
+	min = 0
+	max = 4000000
+	if strings.HasSuffix(filename, "sample.txt") {
+		max = 20
+	}
+	fmt.Printf("Checking from (%d,%d) to (%d,%d)\n", min, min, max, max)
+
+	var err error
+	cave := &Map{}
+	for line := range ReadLines(filename) {
+		err = cave.Parse(line)
+		if err != nil {
+			log.Fatalf("could not parse line: %q: %v", line, err)
+		}
+	}
+
+	var beacon Point
+	beacon, err = cave.Search(min, max)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return strconv.Itoa(beacon.X*4000000 + beacon.Y)
 }
