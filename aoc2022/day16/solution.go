@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -30,11 +31,109 @@ type Valve struct {
 	Neighbors []*Valve
 }
 
+func (v *Valve) String() string {
+	return fmt.Sprintf("[%s: flow=%d, tunnels=%d]", v.Name, v.Rate, len(v.Neighbors))
+}
+
 var valveFormat = regexp.MustCompile(`^Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? ([\w, ]+)$`)
 
 type Graph struct {
 	nodes     map[string]*Valve
+	distance  map[[2]string]int
 	MaxReward int
+}
+
+func (g *Graph) Distance(a, b *Valve) int {
+	//fmt.Printf("Calculating distance bettween %v and %v\n", a,b)
+	if a.Name == b.Name {
+		//fmt.Println("--short circuit")
+		return 0
+	}
+	if a.Rate == 0 || b.Rate == 0 {
+		panic(fmt.Sprintf("we assumed that zero-flow valves are not interesting!"))
+	}
+	if g.distance == nil {
+		g.distance = make(map[[2]string]int)
+	}
+
+	var names [2]string
+	names = [...]string{a.Name, b.Name}
+	sort.Strings(names[:])
+
+	var result int
+	var found bool
+	result, found = g.distance[names]
+	if found {
+		//fmt.Println("--known distance")
+		return result
+	}
+
+	visited := make(map[string]bool)
+	distance := make(map[string]int)
+
+	var cursor, valve *Valve
+	var oldD, newD int
+	var name, nextName string
+	var value, min int
+	cursor = a
+	for { // Dijkstra distances
+		//fmt.Printf("Djkstra: cursor %s\n", cursor)
+		for _, valve = range cursor.Neighbors {
+			//fmt.Printf("neighbor %s\n", valve)
+			if visited[valve.Name] {
+				continue
+			}
+			oldD, found = distance[valve.Name]
+			newD = distance[cursor.Name] + 1 // all steps cost one minute
+			if !found || newD < oldD {
+				//fmt.Printf("new distance for %s: %d\n", valve, newD)
+				distance[valve.Name] = newD
+			}
+		}
+		visited[cursor.Name] = true
+
+		found = false
+		for name, value = range distance { // select unvisited node with lowest distance
+			if visited[name] {
+				continue
+			}
+			if !found || value < min {
+				found = true
+				min = value
+				nextName = name
+			}
+		}
+		if !found { // no more unvisited nodes
+			break
+		}
+		valve, found = g.Get(nextName)
+		if !found {
+			panic(fmt.Sprintf("search encountered nonexistend node: %s", nextName))
+		}
+		if valve == cursor {
+			panic(fmt.Sprintf("entering endless loop at %v", cursor))
+		}
+		cursor = valve
+	}
+
+	value = 0
+	found = false
+	for _, valve = range g.nodes { // remember all distances from node a
+		if valve.Rate == 0 {
+			continue // this is noise, we will never want to fetch such values
+		}
+		names = [...]string{a.Name, valve.Name}
+		sort.Strings(names[:])
+		g.distance[names] = distance[valve.Name]
+		if valve == b {
+			value = g.distance[names]
+			found = true
+		}
+	}
+	if !found {
+		panic(fmt.Sprintf("no path found between %v and %v", a, b))
+	}
+	return value
 }
 
 func (g *Graph) Search(from string, depth int) int {
@@ -137,7 +236,12 @@ func part1(filename string) string {
 			log.Fatal(err)
 		}
 	}
-	return strconv.Itoa(tunnels.Search("AA", 30))
+	var from, to *Valve
+	from, _ = tunnels.Get("CC")
+	to, _ = tunnels.Get("EE")
+	fmt.Println(tunnels.Distance(from, to))
+	//return strconv.Itoa(tunnels.Search("AA", 30))
+	return ""
 }
 
 func part2(filename string) string {
