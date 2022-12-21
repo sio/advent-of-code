@@ -124,74 +124,175 @@ func (g *Graph) Distance(a, b *Valve) int {
 	return value
 }
 
-func (g *Graph) Search(from string, depth int) int {
+func (g *Graph) Search(from string, depth int, workers int) int {
 	start, ok := g.Get(from)
 	if !ok {
 		panic(fmt.Sprintf("Starting node %s not found in graph!", from))
 	}
-	g.recursiveSearch(SearchState{
-		Cursor: start,
-		Limit:  depth,
-	})
+	var state SearchState
+	var actors SearchActors
+	for i := 0; i < workers && workers > 0; i++ {
+		actors.Add(SearchActor{Cursor: start, Limit: depth})
+	}
+	g.multiSearch(state, actors)
 	return g.MaxReward
 }
 
-type SearchState struct {
+type SearchActor struct {
 	Cursor *Valve
 	Limit  int
+}
+
+type SearchActors []SearchActor
+
+func (sa *SearchActors) Add(a SearchActor) {
+	*sa = append(*sa, a)
+}
+
+func (sa *SearchActors) Cleanup(threshold int) {
+	var newIndex, oldIndex int
+	newIndex = 0
+	for oldIndex = 0; oldIndex < len(*sa); oldIndex++ {
+		if (*sa)[oldIndex].Limit < threshold {
+			continue // drop this entry
+		}
+		(*sa)[newIndex] = (*sa)[oldIndex]
+		newIndex++
+	}
+	(*sa) = (*sa)[:newIndex]
+}
+
+func (sa *SearchActors) Move(steps []SearchMove) (modified SearchActors) {
+	modified = make(SearchActors, len(*sa))
+	var i int
+	for i = 0; i < len(modified); i++ {
+		modified[i] = SearchActor{
+			Cursor: steps[i].Dest,
+			Limit:  (*sa)[i].Limit - steps[i].Cost,
+		}
+	}
+	return modified
+}
+
+type SearchState struct {
 	Path   Valves
 	Reward int
 }
 
-func (g *Graph) recursiveSearch(search SearchState) {
-	//fmt.Printf("Top: %4d | Position %s, %d remaining, open: %v, reward %d\n", g.MaxReward, search.Cursor.Name, search.Limit, search.Path, search.Reward)
+type SearchMove struct {
+	Dest *Valve
+	Cost int
+}
+
+// Recursive search function for multiple actors
+func (g *Graph) multiSearch(search SearchState, actors SearchActors) {
 
 	// termination condition (can't open current valve or go anywhere)
-	if search.Limit < 1 {
+	actors.Cleanup(1)
+	if len(actors) == 0 {
 		return
 	}
 
 	// early exit (this path is not a winning one)
-	if search.Reward+g.RewardCeiling(search) <= g.MaxReward {
+	if search.Reward+g.RewardCeiling(search, actors) <= g.MaxReward {
 		return
 	}
 
-	// sanity check
-	if (search.Cursor.Rate == 0 && len(search.Path) > 0) || search.Path.Contains(search.Cursor) {
-		panic(fmt.Sprintf("just did a useless move to %s", search.Cursor))
+	var i int
+	for i = 0; i < len(actors); i++ {
+		actors[i].Do(&search, g)
 	}
 
-	// open current valve (except for the starting one)
-	if search.Cursor.Rate != 0 {
-		search.Limit--
-		search.Path.Add(search.Cursor)
-		search.Reward += search.Cursor.Rate * search.Limit
-	}
-	if search.Reward > g.MaxReward {
-		g.MaxReward = search.Reward
-	}
-	if search.Limit < 2 { // one step to open next valve + at least one step to get there
+	// give up early if there is nothing useful left to do
+	// (one step to open next valve + at least one step to get there)
+	actors.Cleanup(2)
+	if len(actors) == 0 {
 		return
 	}
 
-	// try opening next valves
-	var valve *Valve
-	var distance int
-	var next SearchState
-	for _, valve = range g.nodes {
-		if valve.Rate == 0 || search.Path.Contains(valve) || valve == search.Cursor {
+	// calculate next possible moves
+	var possibilities PossibleMoves
+	for i = 0; i < len(actors); i++ {
+		possibilities = append(possibilities, actors[i].NextMoves(&search, g))
+	}
+
+	// drop actors without any moves left
+	var keep int
+	for i = 0; i < len(actors); i++ {
+		if len(possibilities[i]) == 0 {
 			continue
 		}
-		distance = g.Distance(search.Cursor, valve)
-		next = search
-		next.Cursor = valve
-		next.Limit -= distance
-		g.recursiveSearch(next)
+		actors[keep] = actors[i]
+		possibilities[keep] = possibilities[i]
+		keep++
+	}
+	if keep == 0 {
+		return
+	}
+	actors = actors[:keep]
+	possibilities = possibilities[:keep]
+
+	// explore all possible next moves
+	var steps []SearchMove
+	var permutations PossibleMovesIterator
+	permutations = possibilities.Iterator()
+	for permutations.Next() {
+		steps = permutations.Value()
+		g.multiSearch(search, actors.Move(steps))
 	}
 }
 
-func (g *Graph) RewardCeiling(search SearchState) (max int) {
+// Non-recursive, single iteration of search for a single actor
+func (actor *SearchActor) Do(search *SearchState, g *Graph) {
+
+	// sanity check
+	if (actor.Cursor.Rate == 0 && len(search.Path) > 0) || search.Path.Contains(actor.Cursor) {
+		panic(fmt.Sprintf("just did a useless move to %s", actor.Cursor))
+	}
+
+	// open current valve (except for the starting one)
+	if actor.Cursor.Rate == 0 || actor.Limit < 1 {
+		return
+	}
+	actor.Limit--
+	search.Path.Add(actor.Cursor)
+	search.Reward += actor.Cursor.Rate * actor.Limit
+
+	// record results
+	if search.Reward > g.MaxReward {
+		g.MaxReward = search.Reward
+	}
+
+	//fmt.Printf(
+	//	"Top: %4d | Position %s, %d remaining, open: %v, reward %d\n\n",
+	//	g.MaxReward,
+	//	actor.Cursor.Name,
+	//	actor.Limit,
+	//	search.Path,
+	//	search.Reward,
+	//)
+}
+
+// Find possible next moves
+func (actor *SearchActor) NextMoves(search *SearchState, g *Graph) (moves []SearchMove) {
 	var valve *Valve
+	for _, valve = range g.nodes {
+		if valve.Rate == 0 || search.Path.Contains(valve) || valve == actor.Cursor {
+			continue
+		}
+		var distance int
+		distance = g.Distance(actor.Cursor, valve)
+		if distance+1 > actor.Limit {
+			continue
+		}
+		moves = append(moves, SearchMove{Dest: valve, Cost: distance})
+	}
+	return moves
+}
+
+func (g *Graph) RewardCeiling(search SearchState, actors SearchActors) (max int) {
+	var valve *Valve
+	var impact, i int
 	for _, valve = range g.nodes {
 		if valve.Rate == 0 {
 			continue
@@ -199,7 +300,11 @@ func (g *Graph) RewardCeiling(search SearchState) (max int) {
 		if search.Path.Contains(valve) {
 			continue
 		}
-		max += valve.Rate * Max(0, search.Limit-g.Distance(search.Cursor, valve)-1)
+		impact = 0
+		for i = 0; i < len(actors); i++ {
+			impact = Max(impact, actors[i].Limit-g.Distance(actors[i].Cursor, valve)-1)
+		}
+		max += valve.Rate * impact
 	}
 	return max
 }
@@ -270,7 +375,7 @@ func part1(filename string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return strconv.Itoa(tunnels.Search("AA", 30))
+	return strconv.Itoa(tunnels.Search("AA", 30, 1))
 }
 
 func part2(filename string) string {
