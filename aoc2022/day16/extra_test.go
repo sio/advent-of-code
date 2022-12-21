@@ -48,3 +48,6 @@ func TestDistances(t *testing.T) {
 		}
 	}
 }
+
+// With my input the winning path yields a reward = 1724:
+//	 [AI KB QK CJ KS CU YE]

@@ -44,9 +44,7 @@ type Graph struct {
 }
 
 func (g *Graph) Distance(a, b *Valve) int {
-	//fmt.Printf("Calculating distance bettween %v and %v\n", a,b)
 	if a.Name == b.Name {
-		//fmt.Println("--short circuit")
 		return 0
 	}
 	if g.distance == nil {
@@ -61,7 +59,6 @@ func (g *Graph) Distance(a, b *Valve) int {
 	var found bool
 	result, found = g.distance[names]
 	if found {
-		//fmt.Println("--known distance")
 		return result
 	}
 
@@ -74,16 +71,13 @@ func (g *Graph) Distance(a, b *Valve) int {
 	var value, min int
 	cursor = a
 	for { // Dijkstra distances
-		//fmt.Printf("Djkstra: cursor %s\n", cursor)
 		for _, valve = range cursor.Neighbors {
-			//fmt.Printf("neighbor %s\n", valve)
 			if visited[valve.Name] {
 				continue
 			}
 			oldD, found = distance[valve.Name]
 			newD = distance[cursor.Name] + 1 // all steps cost one minute
 			if !found || newD < oldD {
-				//fmt.Printf("new distance for %s: %d\n", valve, newD)
 				distance[valve.Name] = newD
 			}
 		}
@@ -200,10 +194,17 @@ func (g *Graph) RewardCeiling(search SearchState) (max int) {
 	var valve *Valve
 	for _, valve = range g.nodes {
 		if !search.Path.Contains(valve) {
-			max += valve.Rate * (search.Limit - g.Distance(search.Cursor, valve))
+			max += valve.Rate * Max(0, search.Limit-g.Distance(search.Cursor, valve)-1)
 		}
 	}
 	return max
+}
+
+func Max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func (g *Graph) Get(name string) (valve *Valve, ok bool) {
@@ -265,11 +266,6 @@ func part1(filename string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//var from, to *Valve
-	//from, _ = tunnels.Get("CC")
-	//to, _ = tunnels.Get("EE")
-	//fmt.Println(tunnels.Distance(from, to))
-	//return ""
 	return strconv.Itoa(tunnels.Search("AA", 30))
 }
 
