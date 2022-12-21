@@ -193,9 +193,13 @@ func (g *Graph) recursiveSearch(search SearchState) {
 func (g *Graph) RewardCeiling(search SearchState) (max int) {
 	var valve *Valve
 	for _, valve = range g.nodes {
-		if !search.Path.Contains(valve) {
-			max += valve.Rate * Max(0, search.Limit-g.Distance(search.Cursor, valve)-1)
+		if valve.Rate == 0 {
+			continue
 		}
+		if search.Path.Contains(valve) {
+			continue
+		}
+		max += valve.Rate * Max(0, search.Limit-g.Distance(search.Cursor, valve)-1)
 	}
 	return max
 }
