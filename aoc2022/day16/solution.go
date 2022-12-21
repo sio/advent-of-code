@@ -11,8 +11,8 @@ import (
 
 type Valves []string
 
-func (vs Valves) Add(valve *Valve) Valves {
-	return append(vs, valve.Name)
+func (vs *Valves) Add(valve *Valve) {
+	*vs = append(*vs, valve.Name)
 }
 
 func (vs *Valves) Contains(valve *Valve) bool {
@@ -135,52 +135,72 @@ func (g *Graph) Search(from string, depth int) int {
 	if !ok {
 		panic(fmt.Sprintf("Starting node %s not found in graph!", from))
 	}
-	g.DFS(start, depth, Valves{}, 0)
+	g.recursiveSearch(SearchState{
+		Cursor: start,
+		Limit:  depth,
+	})
 	return g.MaxReward
 }
 
-func (g *Graph) DFS(start *Valve, limit int, open Valves, collected int) {
-	//fmt.Printf("Top: %4d | Position %s, %d remaining, open: %v, reward %d\n", g.MaxReward, start.Name, limit, open, collected)
+type SearchState struct {
+	Cursor *Valve
+	Limit  int
+	Path   Valves
+	Reward int
+}
 
-	// termination condition
-	if limit < 0 {
-		return // do not save impossible results
-	}
-	if collected > g.MaxReward {
-		//fmt.Printf("  %04d: open valves %v\n", collected, open)
-		g.MaxReward = collected
-	}
-	if limit == 0 {
-		return // exit after saving results
-	}
+func (g *Graph) recursiveSearch(search SearchState) {
+	//fmt.Printf("Top: %4d | Position %s, %d remaining, open: %v, reward %d\n", g.MaxReward, search.Cursor.Name, search.Limit, search.Path, search.Reward)
 
-	// early exit
-	if collected+g.RewardCeiling(limit, open) <= g.MaxReward {
-		//fmt.Println("  this path will not win")
+	// termination condition (can't open current valve or go anywhere)
+	if search.Limit < 1 {
 		return
 	}
 
-	if start.Rate != 0 && !open.Contains(start) { // try opening this valve
-		//fmt.Printf("          | opening %v, reward %d\n", start, start.Rate*(limit-1))
-		g.DFS(start, limit-1, open.Add(start), collected+start.Rate*(limit-1))
+	// early exit (this path is not a winning one)
+	if search.Reward+g.RewardCeiling(search) <= g.MaxReward {
+		return
 	}
+
+	// sanity check
+	if (search.Cursor.Rate == 0 && len(search.Path) > 0) || search.Path.Contains(search.Cursor) {
+		panic(fmt.Sprintf("just did a useless move to %s", search.Cursor))
+	}
+
+	// open current valve (except for the starting one)
+	if search.Cursor.Rate != 0 {
+		search.Limit--
+		search.Path.Add(search.Cursor)
+		search.Reward += search.Cursor.Rate * search.Limit
+	}
+	if search.Reward > g.MaxReward {
+		g.MaxReward = search.Reward
+	}
+	if search.Limit < 2 { // one step to open next valve + at least one step to get there
+		return
+	}
+
+	// try opening next valves
 	var valve *Valve
 	var distance int
-	for _, valve = range g.nodes { // try going to other important valves instead
-		if valve.Rate == 0 || open.Contains(valve) || valve == start {
+	var next SearchState
+	for _, valve = range g.nodes {
+		if valve.Rate == 0 || search.Path.Contains(valve) || valve == search.Cursor {
 			continue
 		}
-		distance = g.Distance(start, valve)
-		//fmt.Printf("          | moving to %v\n", valve)
-		g.DFS(valve, limit-distance, open, collected)
+		distance = g.Distance(search.Cursor, valve)
+		next = search
+		next.Cursor = valve
+		next.Limit -= distance
+		g.recursiveSearch(next)
 	}
 }
 
-func (g *Graph) RewardCeiling(limit int, open Valves) (max int) {
+func (g *Graph) RewardCeiling(search SearchState) (max int) {
 	var valve *Valve
 	for _, valve = range g.nodes {
-		if !open.Contains(valve) {
-			max += valve.Rate * limit
+		if !search.Path.Contains(valve) {
+			max += valve.Rate * (search.Limit - g.Distance(search.Cursor, valve))
 		}
 	}
 	return max
