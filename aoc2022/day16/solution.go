@@ -368,16 +368,20 @@ func (g *Graph) Parse(line string) (err error) {
 	return nil
 }
 
-func part1(filename string) string {
+func Play(filename string, moves int, players int) int {
 	var err error
 	tunnels := &Graph{}
 	err = tunnels.ParseFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return strconv.Itoa(tunnels.Search("AA", 30, 1))
+	return tunnels.Search("AA", moves, players)
+}
+
+func part1(filename string) string {
+	return strconv.Itoa(Play(filename, 30, 1))
 }
 
 func part2(filename string) string {
-	return ""
+	return strconv.Itoa(Play(filename, 26, 2))
 }
