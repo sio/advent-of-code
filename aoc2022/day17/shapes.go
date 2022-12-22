@@ -11,8 +11,8 @@ const (
 
 type Shape struct {
 	corner Point // bottom left corner of a rectangle confining the shape
-	height int
-	width  int
+	height int64
+	width  int64
 	rocks  []Direction
 }
 
@@ -30,12 +30,12 @@ func (s *Shape) Parse(visual string) {
 			if char != Rock {
 				continue
 			}
-			s.rocks = append(s.rocks, Direction{x, y})
-			if x+1 > s.width {
-				s.width = x + 1
+			s.rocks = append(s.rocks, Direction{int64(x), int64(y)})
+			if int64(x+1) > s.width {
+				s.width = int64(x + 1)
 			}
-			if y+1 > s.height {
-				s.height = y + 1
+			if int64(y+1) > s.height {
+				s.height = int64(y + 1)
 			}
 		}
 	}

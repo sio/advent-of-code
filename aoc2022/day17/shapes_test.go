@@ -27,7 +27,7 @@ const expected = `
 func TestDefaultShapes(t *testing.T) {
 	shapes := DefaultShapes()
 	chamber := Chamber{width: 7}
-	y := 0
+	y := int64(0)
 	for _, s := range shapes {
 		s.corner.Y = y
 		chamber.Settle(&s)

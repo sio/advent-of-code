@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
 type Chamber struct {
-	height         int
-	width          int
+	height         int64
+	width          int64
 	rocks          map[Point]bool
 	spawnFrom      []Shape
 	spawnCounter   int
@@ -109,7 +108,7 @@ func (chamber *Chamber) Settle(shape *Shape) {
 
 func (chamber *Chamber) Render() string {
 	var builder strings.Builder
-	var x, y int
+	var x, y int64
 	for y = chamber.height - 1; y >= 0; y-- {
 		for x = 0; x < chamber.width; x++ {
 			if chamber.rocks[Point{x, y}] {
@@ -149,7 +148,7 @@ func part1(filename string) string {
 	for i := 0; i < 2022; i++ {
 		chamber.Drop()
 	}
-	return strconv.Itoa(chamber.height)
+	return fmt.Sprintf("%d", chamber.height)
 }
 
 func part2(filename string) string {

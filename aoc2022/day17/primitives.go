@@ -2,7 +2,7 @@ package main
 
 // Point{0, 0} is at the bottom left corner
 type Point struct {
-	X, Y int
+	X, Y int64
 }
 
 type Direction Point
