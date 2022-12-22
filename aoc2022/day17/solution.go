@@ -50,15 +50,6 @@ func (chamber *Chamber) Render() string {
 }
 
 func part1(filename string) string {
-	shapes := DefaultShapes()
-	chamber := Chamber{width: 7}
-	y := 0
-	for _, s := range shapes {
-		s.corner.Y = y
-		chamber.Settle(&s)
-		y += s.height + 1
-	}
-	fmt.Println(chamber.Render())
 	return ""
 }
 
