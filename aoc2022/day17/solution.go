@@ -18,7 +18,6 @@ type Chamber struct {
 	spawnCounter   int
 	pushDirections []Direction
 	pushCounter    int
-	floor          int64
 	skyline        SkyLine
 	seen           map[ChamberSnapshot]ChamberStatus
 	loop           ChamberLoop
@@ -76,11 +75,10 @@ func (chamber *Chamber) Next(iteration int64) bool {
 	chamber.Settle(shape)
 
 	if iteration < 0 {
-		return false // do not update skyline and floor and the rest of parameters
+		return false // do not update skyline and the rest of parameters
 	}
 
 	chamber.UpdateSkyLine()
-	//chamber.Cut() // detecting loops make us so fast we don't need to cut old data
 
 	var state = ChamberSnapshot{
 		shape:   chamber.spawnCounter,
@@ -204,30 +202,10 @@ func (chamber *Chamber) UpdateSkyLine() {
 	}
 }
 
-func (chamber *Chamber) Cut() {
-	var floor int64
-	floor = chamber.height
-
-	var x int64
-	for x = 0; x < chamber.width; x++ {
-		if chamber.height-chamber.skyline[x] < floor {
-			floor = chamber.height - chamber.skyline[x]
-		}
-	}
-
-	var rock Point
-	for rock = range chamber.rocks {
-		if rock.Y < floor {
-			delete(chamber.rocks, rock)
-		}
-	}
-	chamber.floor = floor
-}
-
 func (chamber *Chamber) Render() string {
 	var builder strings.Builder
 	var x, y int64
-	for y = chamber.height - 1; y >= chamber.floor; y-- {
+	for y = chamber.height - 1; y >= 0; y-- {
 		for x = 0; x < chamber.width; x++ {
 			if chamber.rocks[Point{x, y}] {
 				builder.WriteRune(Rock)
@@ -236,9 +214,6 @@ func (chamber *Chamber) Render() string {
 			}
 		}
 		builder.WriteRune('\n')
-	}
-	if chamber.floor > 0 {
-		builder.WriteString(fmt.Sprintf("floor at %d\n", chamber.floor))
 	}
 	return builder.String()
 }
