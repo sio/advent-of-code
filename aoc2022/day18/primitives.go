@@ -44,3 +44,32 @@ var Neighbors = []Direction{
 	{0, 0, 1},
 	{0, 0, -1},
 }
+
+var Diagonals = []Direction{
+	// Sometimes steam may be touching only a single edge of a cube,
+	// not the whole face
+	{-1, -1, 0},
+	{-1, 0, -1},
+	{-1, 0, 1},
+	{-1, 1, 0},
+	{0, -1, -1},
+	{0, -1, 1},
+	{0, 1, -1},
+	{0, 1, 1},
+	{1, -1, 0},
+	{1, 0, -1},
+	{1, 0, 1},
+	{1, 1, 0},
+
+	// There is no point in checking these as steam can not move diagonally and
+	// will never be touching just a single vertex
+	// (always in contact with either a face or an edge)
+	// {-1, -1, -1},
+	// {-1, -1, 1},
+	// {-1, 1, -1},
+	// {-1, 1, 1},
+	// {1, -1, -1},
+	// {1, -1, 1},
+	// {1, 1, -1},
+	// {1, 1, 1},
+}
