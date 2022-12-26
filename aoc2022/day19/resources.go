@@ -9,6 +9,7 @@ const (
 	Obsidian
 	Geode
 )
+const Noop ResourceIndex = -1
 
 var ResourceName = map[string]ResourceIndex{
 	"ore":      Ore,
@@ -46,16 +47,16 @@ func (pack *ResourcePack) Spend(cost ResourcePack) {
 }
 
 // Return index of the lowest resource
-func (pack *ResourcePack) Lowest() ResourceIndex {
+func (pack ResourcePack) Lowest() ResourceIndex {
 	var minIndex ResourceIndex
 	var minValue int
 	minIndex = 0
-	minValue = (*pack)[minIndex]
+	minValue = pack[minIndex]
 
 	var i ResourceIndex
-	for i = 0; i < ResourceIndex(len(*pack)); i++ {
-		if (*pack)[i] < minValue {
-			minValue = (*pack)[i]
+	for i = 0; i < ResourceIndex(len(pack)); i++ {
+		if pack[i] < minValue {
+			minValue = pack[i]
 			minIndex = i
 		}
 	}
@@ -69,7 +70,7 @@ func Sum(a, b ResourcePack) ResourcePack {
 	return a
 }
 
-func Sub(a, b ResourcePack) ResourcePack {
+func Diff(a, b ResourcePack) ResourcePack {
 	a.Spend(b)
 	return a
 }

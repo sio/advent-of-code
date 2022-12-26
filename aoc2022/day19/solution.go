@@ -8,47 +8,81 @@ func (f *Factory) QualityLevel(moves int) int {
 	if f.maxGeode == 0 {
 		search := searchParams{
 			Limit:  moves,
-			Output: ResourcePack{1, 0, 0, 0},
+			Output: Robot(Ore),
 		}
-		f.findMaxGeode(search, ResourcePack{})
+		f.OptimizationDraft(search, ResourcePack{})
+		f.Optimization(search, ResourcePack{})
 	}
 	fmt.Println(f)
 	return f.ID * f.maxGeode
 }
 
-func (f *Factory) findMaxGeode(s searchParams, robot ResourcePack) {
-	//f.Debug("[TOP %4d] building %v status %v\n", f.maxGeode, robot, s)
-
+// Shared logic for different search approaches
+func (f *Factory) step(search *searchParams, robot *ResourcePack) {
 	// Harvest resources for this move
-	s.Balance.Add(s.Output)
-	if s.Balance[Geode] > f.maxGeode {
-		f.maxGeode = s.Balance[Geode]
+	search.Balance.Add(search.Output)
+	if search.Balance[Geode] > f.maxGeode {
+		f.maxGeode = search.Balance[Geode]
 	}
 
 	// Increase our production level thanks to new robot
-	s.Output.Add(robot)
+	search.Output.Add(*robot)
 
-	// Check if this was our last move
-	s.Limit--
-	//f.Debug("           after                     %v\n", s)
-	if s.Limit <= 0 {
+	// Decrease number of steps remaining
+	search.Limit--
+
+	// Log our success
+	if f.maxGeodeRobots == nil {
+		f.maxGeodeRobots = make(map[int]int)
+	}
+	if search.Output[Geode] > 0 {
+		f.maxGeodeRobots[search.Limit] = search.Output[Geode]
+	}
+}
+
+// Naive first pass to populate short-circuit parameters
+func (f *Factory) OptimizationDraft(search searchParams, robot ResourcePack) {
+	f.step(&search, &robot)
+	if search.Limit <= 0 {
 		return
 	}
 
-	// Early exit for paths that clearly will not win
-	var geodeRobot ResourcePack
-	geodeRobot[Geode] = 1
-	var ceiling int
-	ceiling = s.Ceiling(f.Blueprint[geodeRobot])
-	if s.Output[Geode] > 0 {
-		f.Debug("[TOP %4d] building %v status %v\n", f.maxGeode, robot, s)
-		f.Debug("           ceiling %d\n", ceiling)
-		if ceiling <= f.maxGeode {
-			f.Debug("           early exit\n")
+	f.Debug("[TOP %4d] building %v status %v\n", f.maxGeode, robot, search)
+	var cost, next ResourcePack
+	robot = Robot(Geode)
+	for {
+		cost = f.Blueprint[robot]
+		f.Debug("considering for next robot %v at cost %v", robot, cost)
+		if search.Balance.Affordable(cost) {
+			f.OptimizationDraft(search.Plan(cost), robot)
+			break
+		}
+		next = Robot(Diff(search.Balance, cost).Lowest())
+		if robot != next {
+			robot = next
+		} else {
+			robot = Robot(Noop)
 		}
 	}
-	//f.Debug("           ceiling %d\n", ceiling)
-	if ceiling <= f.maxGeode {
+}
+
+// Proper search for an optimal solution
+func (f *Factory) Optimization(search searchParams, robot ResourcePack) {
+	f.step(&search, &robot)
+	if search.Limit <= 0 {
+		return
+	}
+
+	f.Debug("[TOP %4d] building %v status %v\n", f.maxGeode, robot, search)
+	f.Debug("%v", f.maxGeodeRobots)
+
+	// Early exit for paths that clearly will not win
+	if f.maxGeodeRobots[search.Limit] > search.Output[Geode] {
+		f.Debug("early exit")
+		return
+	}
+	if search.Ceiling(f.Blueprint[Robot(Geode)]) <= f.maxGeode {
+		f.Debug("ceiling hit")
 		return
 	}
 
@@ -65,10 +99,10 @@ func (f *Factory) findMaxGeode(s searchParams, robot ResourcePack) {
 		if !ok {
 			panic(fmt.Sprintf("attempting to build robot without a blueprint: %v", robot))
 		}
-		if !s.Balance.Affordable(cost) {
+		if !search.Balance.Affordable(cost) {
 			continue
 		}
-		f.findMaxGeode(s.Plan(cost), robot)
+		f.Optimization(search.Plan(cost), robot)
 	}
 }
 
@@ -93,20 +127,21 @@ func (s searchParams) Ceiling(cost ResourcePack) int {
 	var max int
 	max = s.Balance[Geode] + s.Limit*s.Output[Geode]
 
-	var newRobot, diff ResourcePack
+	//var newRobot, diff ResourcePack
 	for s.Limit > 0 {
 		s.Limit--
-		newRobot = ResourcePack{}
-		if s.Balance.Affordable(cost) {
-			s.Balance.Spend(cost)
-			max += s.Limit
-			newRobot[Geode] = 1
-		} else {
-			diff = Sub(s.Balance, cost)
-			newRobot[diff.Lowest()] = 1
-		}
-		s.Balance.Add(s.Output)
-		s.Output.Add(newRobot)
+		max += s.Limit
+		//newRobot = ResourcePack{}
+		//if s.Balance.Affordable(cost) {
+		//	s.Balance.Spend(cost)
+		//	max += s.Limit
+		//	newRobot[Geode] = 1
+		//} else {
+		//	diff = Diff(s.Balance, cost)
+		//	newRobot[diff.Lowest()] = 1
+		//}
+		//s.Balance.Add(s.Output)
+		//s.Output.Add(newRobot)
 	}
 	return max
 }
@@ -116,10 +151,7 @@ func part1(filename string) string {
 	var result int
 	for line := range ReadLines(filename) {
 		factory.Parse(line)
-		factory.debug = factory.ID == 2
-		if !factory.debug {
-			continue
-		}
+		//factory.debug = true
 		fmt.Println(factory)
 		result += factory.QualityLevel(24)
 	}

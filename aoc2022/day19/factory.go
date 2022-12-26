@@ -8,10 +8,19 @@ import (
 )
 
 type Factory struct {
-	ID        int
-	Blueprint map[ResourcePack]ResourcePack // map of {robot output -> robot cost}
-	maxGeode  int
-	debug     bool
+	ID             int
+	Blueprint      map[ResourcePack]ResourcePack // map of {robot output -> robot cost}
+	maxGeode       int
+	maxGeodeRobots map[int]int
+	debug          bool
+}
+
+func Robot(output ResourceIndex) ResourcePack {
+	var r ResourcePack
+	if output >= 0 {
+		r[output] = 1
+	}
+	return r
 }
 
 func (f *Factory) Debug(template string, args ...any) {
@@ -24,8 +33,12 @@ func (f *Factory) Debug(template string, args ...any) {
 	fmt.Printf(template, args...)
 }
 
+func (f *Factory) reset() {
+	*f = Factory{}
+}
+
 func (f *Factory) Parse(line string) (err error) {
-	f.maxGeode = 0 // invalidate the result of previous calculation
+	f.reset() // invalidate all results of previous calculation
 
 	var robotOutput, robotCost ResourcePack
 	if f.Blueprint == nil {
