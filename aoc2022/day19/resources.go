@@ -2,7 +2,7 @@ package main
 
 import ()
 
-const ResourceTypeCount = 4
+const ResourceTypeCount ResourceIndex = 4
 const (
 	Ore ResourceIndex = iota
 	Clay

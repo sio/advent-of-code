@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 )
 
 func (f *Factory) QualityLevel(moves int) int {
@@ -13,7 +14,6 @@ func (f *Factory) QualityLevel(moves int) int {
 		f.OptimizationDraft(search, ResourcePack{})
 		f.Optimization(search, ResourcePack{})
 	}
-	fmt.Println(f)
 	return f.ID * f.maxGeode
 }
 
@@ -89,12 +89,8 @@ func (f *Factory) Optimization(search searchParams, robot ResourcePack) {
 	// Launch new robot production
 	var cost ResourcePack
 	var ok bool
-	var i int
-	for i = ResourceTypeCount - 1; i >= -1; i-- { // try to build Geode robots first to increase short-circuit frequency
-		robot = ResourcePack{}
-		if i > 0 {
-			robot[i] = 1
-		}
+	for i := ResourceTypeCount - 1; i >= -1; i-- { // try to build Geode robots first to increase short-circuit frequency
+		robot = Robot(i)
 		cost, ok = f.Blueprint[robot]
 		if !ok {
 			panic(fmt.Sprintf("attempting to build robot without a blueprint: %v", robot))
@@ -103,6 +99,9 @@ func (f *Factory) Optimization(search searchParams, robot ResourcePack) {
 			continue
 		}
 		f.Optimization(search.Plan(cost), robot)
+		if i == Geode {
+			break // we don't need to evaluate alternatives when we can afford a Geode robot
+		}
 	}
 }
 
@@ -150,10 +149,12 @@ func part1(filename string) string {
 	var factory Factory
 	var result int
 	for line := range ReadLines(filename) {
-		factory.Parse(line)
-		//factory.debug = true
-		fmt.Println(factory)
+		err := factory.Parse(line)
+		if err != nil {
+			log.Fatal(err)
+		}
 		result += factory.QualityLevel(24)
+		fmt.Println(factory)
 	}
 	return fmt.Sprintf("%d", result)
 }
