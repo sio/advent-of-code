@@ -11,6 +11,17 @@ type Factory struct {
 	ID        int
 	Blueprint map[ResourcePack]ResourcePack // map of {robot output -> robot cost}
 	maxGeode  int
+	debug     bool
+}
+
+func (f *Factory) Debug(template string, args ...any) {
+	if !f.debug {
+		return
+	}
+	if !strings.HasSuffix(template, "\n") {
+		template += "\n"
+	}
+	fmt.Printf(template, args...)
 }
 
 func (f *Factory) Parse(line string) (err error) {
