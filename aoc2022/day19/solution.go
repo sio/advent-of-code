@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
 )
 
 func (f *Factory) QualityLevel(moves int) int {
@@ -145,18 +146,59 @@ func (s searchParams) Ceiling(cost ResourcePack) int {
 	return max
 }
 
-func part1(filename string) string {
-	var factory Factory
-	var result int
+func worker(input <-chan Factory, results chan<- int, moves int, wg *sync.WaitGroup) {
+	for f := range input {
+		results <- f.QualityLevel(moves)
+		fmt.Printf("Blueprint #%d: %d geodes\n", f.ID, f.maxGeode)
+	}
+	close(results)
+	wg.Done()
+}
+
+func solve(filename string, moves int) int {
+	const numWorkers = 4
+
+	input := make(chan Factory)
+	results := make(chan int)
+	var wg *sync.WaitGroup
+	wg = &sync.WaitGroup{}
+	for i := 0; i < numWorkers; i++ {
+		go worker(input, results, moves, wg)
+		wg.Add(1)
+	}
+
+	var total int
+	go func() {
+		for value := range results {
+			total += value
+		}
+	}()
+
 	for line := range ReadLines(filename) {
+		factory := Factory{}
 		err := factory.Parse(line)
 		if err != nil {
 			log.Fatal(err)
 		}
-		result += factory.QualityLevel(24)
-		fmt.Println(factory)
+		input <- factory
 	}
-	return fmt.Sprintf("%d", result)
+	close(input)
+	wg.Wait()
+	return total
+}
+
+func part1(filename string) string {
+	//var factory Factory
+	//var result int
+	//for line := range ReadLines(filename) {
+	//	err := factory.Parse(line)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//	result += factory.QualityLevel(24)
+	//	fmt.Println(factory)
+	//}
+	return fmt.Sprintf("%d", solve(filename, 24))
 }
 
 func part2(filename string) string {
