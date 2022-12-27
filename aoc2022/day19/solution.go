@@ -3,86 +3,78 @@ package main
 import (
 	"fmt"
 	"log"
-	"sync"
 )
+
+const Impossible int = -99
 
 func (f *Factory) QualityLevel(moves int) int {
 	if f.maxGeode == 0 {
-		search := searchParams{
+		branch := searchParams{
 			Limit:  moves,
-			Output: Robot(Ore),
+			Output: RobotOutput(Ore),
 		}
-		f.OptimizationDraft(search, ResourcePack{})
-		f.Optimization(search, ResourcePack{})
+		f.Optimization(branch, ResourcePack{})
 	}
 	return f.ID * f.maxGeode
 }
 
+// How many steps do we need to wait until we can build this robot?
+func (f *Factory) until(robot ResourceIndex, branch searchParams) int {
+	var cost, need ResourcePack
+	cost = f.Blueprint[robot]
+
+	if branch.Balance.Affordable(cost) {
+		return 0
+	}
+	need = cost.Above(branch.Balance)
+	var steps int
+	var ok bool
+	steps, ok = need.Divide(branch.Output)
+	if !ok {
+		return Impossible
+	}
+	return steps
+}
+
 // Shared logic for different search approaches
-func (f *Factory) step(search *searchParams, robot *ResourcePack) {
+func (f *Factory) step(branch *searchParams, robot ResourceIndex) {
 	// Harvest resources for this move
-	search.Balance.Add(search.Output)
-	if search.Balance[Geode] > f.maxGeode {
-		f.maxGeode = search.Balance[Geode]
+	branch.Balance.Add(branch.Output)
+	if branch.Balance[Geode] > f.maxGeode {
+		f.maxGeode = branch.Balance[Geode]
 	}
 
 	// Increase our production level thanks to new robot
-	search.Output.Add(*robot)
+	branch.Output.Add(RobotOutput(robot))
 
 	// Decrease number of steps remaining
-	search.Limit--
+	branch.Limit--
 
 	// Log our success
 	if f.maxGeodeRobots == nil {
 		f.maxGeodeRobots = make(map[int]int)
 	}
-	if search.Output[Geode] > 0 {
-		f.maxGeodeRobots[search.Limit] = search.Output[Geode]
-	}
-}
-
-// Naive first pass to populate short-circuit parameters
-func (f *Factory) OptimizationDraft(search searchParams, robot ResourcePack) {
-	f.step(&search, &robot)
-	if search.Limit <= 0 {
-		return
-	}
-
-	f.Debug("[TOP %4d] building %v status %v\n", f.maxGeode, robot, search)
-	var cost, next ResourcePack
-	robot = Robot(Geode)
-	for {
-		cost = f.Blueprint[robot]
-		f.Debug("considering for next robot %v at cost %v", robot, cost)
-		if search.Balance.Affordable(cost) {
-			f.OptimizationDraft(search.Plan(cost), robot)
-			break
-		}
-		next = Robot(Diff(search.Balance, cost).Lowest())
-		if robot != next {
-			robot = next
-		} else {
-			robot = Robot(Noop)
-		}
+	if branch.Output[Geode] > 0 {
+		f.maxGeodeRobots[branch.Limit] = branch.Output[Geode]
 	}
 }
 
 // Proper search for an optimal solution
-func (f *Factory) Optimization(search searchParams, robot ResourcePack) {
-	f.step(&search, &robot)
-	if search.Limit <= 0 {
+func (f *Factory) Optimization(branch searchParams, robot ResourceIndex, skip int) {
+	f.step(&branch, robot)
+	if branch.Limit <= 0 {
 		return
 	}
 
-	f.Debug("[TOP %4d] building %v status %v\n", f.maxGeode, robot, search)
+	f.Debug("[TOP %4d] building %v status %v\n", f.maxGeode, robot, branch)
 	f.Debug("%v", f.maxGeodeRobots)
 
 	// Early exit for paths that clearly will not win
-	if f.maxGeodeRobots[search.Limit] > search.Output[Geode] {
+	if f.maxGeodeRobots[branch.Limit] > branch.Output[Geode] {
 		f.Debug("early exit")
 		return
 	}
-	if search.Ceiling(f.Blueprint[Robot(Geode)]) <= f.maxGeode {
+	if branch.Ceiling(f.Blueprint[Geode]) <= f.maxGeode {
 		f.Debug("ceiling hit")
 		return
 	}
@@ -91,15 +83,14 @@ func (f *Factory) Optimization(search searchParams, robot ResourcePack) {
 	var cost ResourcePack
 	var ok bool
 	for i := ResourceTypeCount - 1; i >= -1; i-- { // try to build Geode robots first to increase short-circuit frequency
-		robot = Robot(i)
-		cost, ok = f.Blueprint[robot]
+		cost, ok = f.Blueprint[i]
 		if !ok {
 			panic(fmt.Sprintf("attempting to build robot without a blueprint: %v", robot))
 		}
-		if !search.Balance.Affordable(cost) {
+		if !branch.Balance.Affordable(cost) {
 			continue
 		}
-		f.Optimization(search.Plan(cost), robot)
+		f.Optimization(branch.Plan(cost), i)
 		if i == Geode {
 			break // we don't need to evaluate alternatives when we can afford a Geode robot
 		}
@@ -146,59 +137,18 @@ func (s searchParams) Ceiling(cost ResourcePack) int {
 	return max
 }
 
-func worker(input <-chan Factory, results chan<- int, moves int, wg *sync.WaitGroup) {
-	for f := range input {
-		results <- f.QualityLevel(moves)
-		fmt.Printf("Blueprint #%d: %d geodes\n", f.ID, f.maxGeode)
-	}
-	close(results)
-	wg.Done()
-}
-
-func solve(filename string, moves int) int {
-	const numWorkers = 4
-
-	input := make(chan Factory)
-	results := make(chan int)
-	var wg *sync.WaitGroup
-	wg = &sync.WaitGroup{}
-	for i := 0; i < numWorkers; i++ {
-		go worker(input, results, moves, wg)
-		wg.Add(1)
-	}
-
-	var total int
-	go func() {
-		for value := range results {
-			total += value
-		}
-	}()
-
+func part1(filename string) string {
+	var factory Factory
+	var result int
 	for line := range ReadLines(filename) {
-		factory := Factory{}
 		err := factory.Parse(line)
 		if err != nil {
 			log.Fatal(err)
 		}
-		input <- factory
+		result += factory.QualityLevel(24)
+		fmt.Println(factory)
 	}
-	close(input)
-	wg.Wait()
-	return total
-}
-
-func part1(filename string) string {
-	//var factory Factory
-	//var result int
-	//for line := range ReadLines(filename) {
-	//	err := factory.Parse(line)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//	result += factory.QualityLevel(24)
-	//	fmt.Println(factory)
-	//}
-	return fmt.Sprintf("%d", solve(filename, 24))
+	return fmt.Sprintf("%d", result)
 }
 
 func part2(filename string) string {

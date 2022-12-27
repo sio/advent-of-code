@@ -9,13 +9,13 @@ import (
 
 type Factory struct {
 	ID             int
-	Blueprint      map[ResourcePack]ResourcePack // map of {robot output -> robot cost}
+	Blueprint      map[ResourceIndex]ResourcePack // map of {robot output -> robot cost}
 	maxGeode       int
 	maxGeodeRobots map[int]int
 	debug          bool
 }
 
-func Robot(output ResourceIndex) ResourcePack {
+func RobotOutput(output ResourceIndex) ResourcePack {
 	var r ResourcePack
 	if output >= 0 {
 		r[output] = 1
@@ -40,16 +40,17 @@ func (f *Factory) reset() {
 func (f *Factory) Parse(line string) (err error) {
 	f.reset() // invalidate all results of previous calculation
 
-	var robotOutput, robotCost ResourcePack
+	var robotCost ResourcePack
 	if f.Blueprint == nil {
-		f.Blueprint = make(map[ResourcePack]ResourcePack)
+		f.Blueprint = make(map[ResourceIndex]ResourcePack)
 	}
 
 	var words []string
 	words = strings.Fields(removeSpecialCharacters(line))
 
 	var i int
-	var resourceType ResourceIndex
+	var robotOutput, resourceType ResourceIndex
+	robotOutput = Noop // all factories can do this for free
 	var found bool
 	for i = 0; i < len(words)-1; i++ {
 		resourceType, found = ResourceName[words[i+1]] // check if the next word names a resource
@@ -68,9 +69,8 @@ func (f *Factory) Parse(line string) (err error) {
 			if !found {
 				return fmt.Errorf("unknown robot type (%s):\n%s", words[i+1], line)
 			}
-			robotOutput = ResourcePack{}
+			robotOutput = resourceType
 			robotCost = ResourcePack{}
-			robotOutput[resourceType] = 1
 			i++
 
 		case found:
