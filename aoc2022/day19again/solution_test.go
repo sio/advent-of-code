@@ -14,6 +14,8 @@ func TestSample(t *testing.T) {
 	}{
 		{part1, "sample.txt", "33"}, // input.txt: 1258 is too low
 		{part2, "sample.txt", ""},
+		{part1, "sample2.txt", "72"},
+		{part2, "sample2.txt", ""},
 	}
 	for i, test := range tests {
 		got := strings.TrimSpace(test.worker(test.input))
