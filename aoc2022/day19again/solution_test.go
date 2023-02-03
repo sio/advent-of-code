@@ -12,7 +12,7 @@ func TestSample(t *testing.T) {
 		input  string
 		result string
 	}{
-		{part1, "sample.txt", "33"},
+		{part1, "sample.txt", "33"}, // input.txt: 1258 is too low
 		{part2, "sample.txt", ""},
 	}
 	for i, test := range tests {
