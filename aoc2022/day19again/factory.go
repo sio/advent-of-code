@@ -5,8 +5,10 @@ import (
 )
 
 type Blueprint struct {
-	ID   int
-	Cost [numberOfResources]Resources
+	ID             int
+	Cost           [numberOfResources]Resources
+	maxGeodeRobots []ResourceValue // slice position = runway
+	maxGeodeStock  ResourceValue
 }
 
 func (b *Blueprint) Parse(line string) {
@@ -26,6 +28,26 @@ func (b *Blueprint) Parse(line string) {
 	}
 }
 
+func (b *Blueprint) Optimize(moves int) {
+	// Initial factory state
+	factory := FactoryState{
+		blueprint: b,
+		runway:    moves,
+	}
+	factory.output[Ore] = 1
+
+	// Prepare result storage
+	b.maxGeodeStock = 0
+	b.maxGeodeRobots = make([]ResourceValue, moves)
+
+	// Start recursion
+	factory.Optimize()
+}
+
+func (b *Blueprint) Quality() int {
+	return b.ID * int(b.maxGeodeStock)
+}
+
 type FactoryState struct {
 	blueprint *Blueprint
 	runway    int
@@ -33,6 +55,60 @@ type FactoryState struct {
 	stock     Resources
 }
 
-func (current FactoryState) Produce(robot ResourceKind) (next FactoryState) {
-	return current
+// Build next robot
+func (factory FactoryState) Produce(robot ResourceKind) FactoryState {
+
+	cost := factory.blueprint.Cost[robot]
+
+	const endgameMoves = 2 // one move to build the last robot + one move to benefit from it
+	endgame := factory.stock.Add(factory.output.Times(factory.runway - endgameMoves))
+	if factory.runway < endgameMoves || !endgame.Covers(cost) { // we can not build this robot factory
+		factory.stock = factory.stock.Add(factory.output.Times(factory.runway))
+		factory.runway = 0
+		return factory
+	}
+
+	var done bool
+	for factory.runway >= endgameMoves {
+		factory.runway--
+		produced := factory.output
+		if factory.stock.Covers(cost) {
+			factory.output[robot]++
+			factory.stock = factory.stock.Sub(cost)
+			done = true
+		}
+		factory.stock = factory.stock.Add(produced)
+		if done {
+			return factory
+		}
+	}
+	panic("endgame estimation failed to short-circuit")
+}
+
+// Check if this search branch is exhausted
+func (factory FactoryState) Done() bool {
+	if factory.runway < 0 {
+		panic("negative runway!")
+	}
+	return factory.runway == 0
+}
+
+// Find optimal blueprint output
+func (factory FactoryState) Optimize() {
+	if factory.Done() {
+		if factory.stock[Geode] > factory.blueprint.maxGeodeStock {
+			factory.blueprint.maxGeodeStock = factory.stock[Geode]
+		}
+		return // stop iteration
+	}
+
+	if factory.output[Geode] < factory.blueprint.maxGeodeRobots[factory.runway-1] {
+		return // short-circuit: this branch is worse than the ones we've already seen
+	}
+	factory.blueprint.maxGeodeRobots[factory.runway-1] = factory.output[Geode]
+
+	for _, robot := range [...]ResourceKind{Geode, Obsidian, Clay, Ore} {
+		next := factory.Produce(robot)
+		next.Optimize()
+	}
 }

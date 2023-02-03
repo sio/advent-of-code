@@ -30,3 +30,21 @@ func (this Resources) Sub(other Resources) (result Resources) {
 	}
 	return result
 }
+
+func (this Resources) Times(n int) (result Resources) {
+	result = this
+	multiplier := ResourceValue(n)
+	for i := 0; i < len(result); i++ {
+		result[i] *= multiplier
+	}
+	return result
+}
+
+func (this Resources) Covers(other Resources) bool {
+	for i := 0; i < len(this); i++ {
+		if this[i] < other[i] {
+			return false
+		}
+	}
+	return true
+}
