@@ -1,4 +1,4 @@
-DAY?=$(lastword $(sort $(wildcard day??)))
+DAY?=$(lastword $(sort $(wildcard day*)))
 GO?=go
 
 ifdef PROFILE
