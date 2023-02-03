@@ -12,8 +12,11 @@ func part1(filename string) string {
 		log.Fatal(err)
 	}
 	defer iter.Close()
+
+	var blueprint Blueprint
 	for iter.Next() {
-		fmt.Printf("> %s\n", iter.Value())
+		blueprint.Parse(iter.Value())
+		fmt.Println(blueprint)
 	}
 	return ""
 }
