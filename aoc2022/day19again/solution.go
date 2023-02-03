@@ -17,10 +17,9 @@ func part1(filename string) string {
 	var total int
 	for iter.Next() {
 		blueprint.Parse(iter.Value())
-		fmt.Println(blueprint)
 		blueprint.Optimize(24)
-		fmt.Println(blueprint.Quality())
 		total += blueprint.Quality()
+		fmt.Printf("%3d: %3d\n", blueprint.ID, blueprint.Quality())
 	}
 	return fmt.Sprint(total)
 }
