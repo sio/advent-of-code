@@ -93,11 +93,20 @@ func (factory FactoryState) Done() bool {
 
 // Find optimal blueprint output
 func (factory FactoryState) Optimize() {
+	if factory.stock[Geode] > factory.blueprint.maxGeodeStock {
+		factory.blueprint.maxGeodeStock = factory.stock[Geode]
+	}
+
 	if factory.Done() {
-		if factory.stock[Geode] > factory.blueprint.maxGeodeStock {
-			factory.blueprint.maxGeodeStock = factory.stock[Geode]
-		}
 		return // stop iteration
+	}
+
+	ceiling := factory.stock[Geode] + factory.output[Geode]*ResourceValue(factory.runway)
+	for i := ResourceValue(factory.runway - 1); i > 0; i-- {
+		ceiling += i
+	}
+	if ceiling < factory.blueprint.maxGeodeStock {
+		return // short-circuit
 	}
 
 	for _, robot := range [...]ResourceKind{Geode, Obsidian, Clay, Ore} {
