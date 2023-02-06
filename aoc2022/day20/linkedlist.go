@@ -117,6 +117,10 @@ func (r *Ring) String() string {
 }
 
 func (r *Ring) Mix() {
+	r.Decrypt(1, 1)
+}
+
+func (r *Ring) Decrypt(key int, rounds int) {
 	var cursor *RingItem
 
 	order := make([]*RingItem, r.Size)
@@ -126,12 +130,18 @@ func (r *Ring) Mix() {
 		cursor = cursor.Next
 	}
 
-	for _, cursor := range order {
-		cursor.Move(cursor.Value)
+	for i := 0; i < rounds; i++ {
+		for _, cursor := range order {
+			cursor.Move(cursor.Value * key)
+		}
 	}
 }
 
 func (r *Ring) GetItem(index int) int {
 	index = index % r.Size
 	return r.Zero.Look(index).Value
+}
+
+func (r *Ring) Coordinates() int {
+	return r.GetItem(1000) + r.GetItem(2000) + r.GetItem(3000)
 }
