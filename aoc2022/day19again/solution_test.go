@@ -19,7 +19,7 @@ func TestSample(t *testing.T) {
 		result string
 	}{
 		{"part1", "sample.txt", "33"}, // input.txt: 1258 is too low
-		{"part2", "sample.txt", ""},
+		{"part2", "sample.txt", fmt.Sprint(56 * 62)},
 		{"part1", "sample2.txt", "72"},
 	}
 	for _, test := range tests {

@@ -46,6 +46,10 @@ func (b *Blueprint) Quality() int {
 	return b.ID * int(b.maxGeodeStock)
 }
 
+func (b *Blueprint) MaxGeodes() int {
+	return int(b.maxGeodeStock)
+}
+
 type FactoryState struct {
 	blueprint *Blueprint
 	runway    int
