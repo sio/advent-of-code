@@ -18,7 +18,7 @@ func TestSample(t *testing.T) {
 		input  string
 		result string
 	}{
-		{"part1", "sample.txt", ""},
+		{"part1", "sample.txt", "3"},
 		{"part2", "sample.txt", ""},
 	}
 	for _, test := range tests {
