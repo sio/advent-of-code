@@ -5,10 +5,9 @@ import (
 )
 
 type Blueprint struct {
-	ID             int
-	Cost           [numberOfResources]Resources
-	maxGeodeRobots []ResourceValue // slice position = runway
-	maxGeodeStock  ResourceValue
+	ID            int
+	Cost          [numberOfResources]Resources
+	maxGeodeStock ResourceValue
 }
 
 func (b *Blueprint) Parse(line string) {
@@ -38,7 +37,6 @@ func (b *Blueprint) Optimize(moves int) {
 
 	// Prepare result storage
 	b.maxGeodeStock = 0
-	b.maxGeodeRobots = make([]ResourceValue, moves)
 
 	// Start recursion
 	factory.Optimize()
@@ -101,11 +99,6 @@ func (factory FactoryState) Optimize() {
 		}
 		return // stop iteration
 	}
-
-	if factory.output[Geode] < factory.blueprint.maxGeodeRobots[factory.runway-1] {
-		return // short-circuit: this branch is worse than the ones we've already seen
-	}
-	factory.blueprint.maxGeodeRobots[factory.runway-1] = factory.output[Geode]
 
 	for _, robot := range [...]ResourceKind{Geode, Obsidian, Clay, Ore} {
 		next := factory.Produce(robot)
