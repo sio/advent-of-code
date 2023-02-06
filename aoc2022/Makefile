@@ -5,6 +5,10 @@ ifdef PROFILE
 ARGS=-cpuprofile $(DAY)/cpu.prof -memprofile $(DAY)/mem.prof
 endif
 
+.PHONY: latest
+latest:  ## run solution for the latest problem and print corrent answers
+latest: input answer
+
 .PHONY: input sample
 input sample sample2: build/$(DAY)  ## execute solution against input file or sample
 	$< $(DAY)/$@.txt $(ARGS)
@@ -19,8 +23,10 @@ test:  ## run automated tests for current day
 	$(GO) test ./$(DAY) -timeout 15s $(GOTEST_ARGS)
 
 .PHONY: test-verbose
+export GOTEST_ARGS
 test-verbose: GOTEST_ARGS+=-v --count=1
-test-verbose: test
+test-verbose:  ## run tests with increased verbosity
+	$(MAKE) test
 
 .PHONY: bench
 bench:  ## run benchmarks for current day
@@ -30,9 +36,14 @@ bench:  ## run benchmarks for current day
 all:  ## build and execute all solutions
 	$(foreach d,$(wildcard day??),$(MAKE) DAY=$(d) &&) exit
 
+.PHONY: answer
+answer:  ## show answers for current day
+	grep --color=auto -R 'Your puzzle answer was' $(DAY)
+
 .PHONY: answers
-answers:  ## show answers for my puzzle inputs
-	grep --color=auto -R 'Your puzzle answer was' day*/
+answers:  ## show answers for all days
+answers:  DAY=day*/
+answers:  answer
 
 .PHONY: fmt
 fmt:  ## format Go code
