@@ -16,7 +16,11 @@ build/$(DAY): $(shell find $(DAY) -type f)
 
 .PHONY: test
 test:  ## run automated tests for current day
-	$(GO) test ./$(DAY) -timeout 15s
+	$(GO) test ./$(DAY) -timeout 15s $(GOTEST_ARGS)
+
+.PHONY: test-verbose
+test-verbose: GOTEST_ARGS+=-v --count=1
+test-verbose: test
 
 .PHONY: bench
 bench:  ## run benchmarks for current day

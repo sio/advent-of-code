@@ -7,19 +7,20 @@ import (
 )
 
 type RingItem struct {
-	Value int
+	Value int64
 	Prev  *RingItem
 	Next  *RingItem
 }
 
-func (ri *RingItem) Look(at int) *RingItem {
+func (ri *RingItem) Look(at int64) *RingItem {
 	steps := at
 	if steps < 0 {
 		steps = -steps
 	}
 
 	neighbor := ri
-	for i := 0; i < steps; i++ {
+	var i int64
+	for i = 0; i < steps; i++ {
 		if at > 0 {
 			neighbor = neighbor.Next
 		} else {
@@ -29,7 +30,7 @@ func (ri *RingItem) Look(at int) *RingItem {
 	return neighbor
 }
 
-func (ri *RingItem) Move(steps int) {
+func (ri *RingItem) Move(steps int64) {
 	if steps == 0 {
 		return
 	}
@@ -53,7 +54,7 @@ func (ri *RingItem) Move(steps int) {
 type Ring struct {
 	First *RingItem
 	Zero  *RingItem
-	Size  int
+	Size  int64
 }
 
 func ReadCoordinates(filename string) *Ring {
@@ -73,7 +74,7 @@ func ReadCoordinates(filename string) *Ring {
 			panic(err)
 		}
 		item := &RingItem{
-			Value: value,
+			Value: int64(value),
 			Prev:  prev,
 		}
 		if prev != nil {
@@ -97,14 +98,42 @@ func ReadCoordinates(filename string) *Ring {
 	return &ring
 }
 
+func (r *Ring) Append(value ...int) {
+	for _, v := range value {
+		item := &RingItem{Value: int64(v)}
+
+		if r.First == nil {
+			item.Next = item
+			item.Prev = item
+			r.First = item
+			r.Size = 1
+			continue
+		}
+
+		tail := r.First.Prev
+		head := r.First
+
+		item.Prev = tail
+		item.Next = head
+
+		tail.Next = item
+		head.Prev = item
+		r.Size++
+	}
+}
+
 func (r *Ring) String() string {
+	return r.StringFrom(r.First)
+}
+
+func (r *Ring) StringFrom(start *RingItem) string {
 	const showItems = 15
 	var truncate string
 	var show = make([]string, 0, showItems)
-	item := r.First
+	item := start
 	for {
 		show = append(show, fmt.Sprint(item.Value))
-		if item.Next == r.First {
+		if item.Next == start {
 			break
 		}
 		if len(show) >= showItems {
@@ -120,28 +149,31 @@ func (r *Ring) Mix() {
 	r.Decrypt(1, 1)
 }
 
-func (r *Ring) Decrypt(key int, rounds int) {
+func (r *Ring) Decrypt(key int64, rounds int64) {
 	var cursor *RingItem
 
 	order := make([]*RingItem, r.Size)
 	cursor = r.First
-	for i := 0; i < r.Size; i++ {
+	var i int64
+	for i = 0; i < r.Size; i++ {
 		order[i] = cursor
+		cursor.Value *= key
 		cursor = cursor.Next
 	}
 
-	for i := 0; i < rounds; i++ {
+	for i = 0; i < rounds; i++ {
 		for _, cursor := range order {
-			cursor.Move(cursor.Value * key)
+			steps := cursor.Value % int64(r.Size-1)
+			cursor.Move(steps)
 		}
 	}
 }
 
-func (r *Ring) GetItem(index int) int {
+func (r *Ring) GetItem(index int64) int64 {
 	index = index % r.Size
 	return r.Zero.Look(index).Value
 }
 
-func (r *Ring) Coordinates() int {
+func (r *Ring) Coordinates() int64 {
 	return r.GetItem(1000) + r.GetItem(2000) + r.GetItem(3000)
 }
