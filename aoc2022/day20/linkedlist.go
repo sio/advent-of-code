@@ -12,8 +12,47 @@ type RingItem struct {
 	Next  *RingItem
 }
 
+func (ri *RingItem) Look(at int) *RingItem {
+	steps := at
+	if steps < 0 {
+		steps = -steps
+	}
+
+	neighbor := ri
+	for i := 0; i < steps; i++ {
+		if at > 0 {
+			neighbor = neighbor.Next
+		} else {
+			neighbor = neighbor.Prev
+		}
+	}
+	return neighbor
+}
+
+func (ri *RingItem) Move(steps int) {
+	if steps == 0 {
+		return
+	}
+
+	// Fuse links at old position
+	ri.Next.Prev = ri.Prev
+	ri.Prev.Next = ri.Next
+
+	// Extend links at new position
+	if steps < 0 {
+		steps-- // look for the left side of the link to break
+	}
+	left := ri.Look(steps)
+	right := left.Next
+	left.Next = ri
+	ri.Prev = left
+	ri.Next = right
+	right.Prev = ri
+}
+
 type Ring struct {
-	Start *RingItem
+	First *RingItem
+	Zero  *RingItem
 	Size  int
 }
 
@@ -26,7 +65,7 @@ func ReadCoordinates(filename string) *Ring {
 	defer iter.Close()
 
 	var ring Ring
-	var prev, first *RingItem
+	var prev *RingItem
 	for iter.Next() {
 		ring.Size++
 		value, err := strconv.Atoi(iter.Value())
@@ -40,19 +79,19 @@ func ReadCoordinates(filename string) *Ring {
 		if prev != nil {
 			prev.Next = item
 		} else {
-			first = item
+			ring.First = item
 		}
 		if value == 0 {
-			if ring.Start != nil {
+			if ring.Zero != nil {
 				panic("second occurence of zero value in input")
 			}
-			ring.Start = item
+			ring.Zero = item
 		}
 		prev = item
 	}
-	first.Prev = prev
-	prev.Next = first
-	if ring.Start == nil {
+	ring.First.Prev = prev
+	prev.Next = ring.First
+	if ring.Zero == nil {
 		panic("zero value not found in input")
 	}
 	return &ring
@@ -62,10 +101,10 @@ func (r *Ring) String() string {
 	const showItems = 15
 	var truncate string
 	var show = make([]string, 0, showItems)
-	item := r.Start
+	item := r.First
 	for {
 		show = append(show, fmt.Sprint(item.Value))
-		if item.Next == r.Start {
+		if item.Next == r.First {
 			break
 		}
 		if len(show) >= showItems {
@@ -75,4 +114,24 @@ func (r *Ring) String() string {
 		item = item.Next
 	}
 	return fmt.Sprintf("[Ring (%d items) %s%s]", r.Size, strings.Join(show, " "), truncate)
+}
+
+func (r *Ring) Mix() {
+	var cursor *RingItem
+
+	order := make([]*RingItem, r.Size)
+	cursor = r.First
+	for i := 0; i < r.Size; i++ {
+		order[i] = cursor
+		cursor = cursor.Next
+	}
+
+	for _, cursor := range order {
+		cursor.Move(cursor.Value)
+	}
+}
+
+func (r *Ring) GetItem(index int) int {
+	index = index % r.Size
+	return r.Zero.Look(index).Value
 }
