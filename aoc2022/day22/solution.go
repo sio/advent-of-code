@@ -5,11 +5,10 @@ import (
 )
 
 func part1(filename string) string {
-	var maze Maze
+	maze := &Maze{}
 	maze.Load(filename)
-	fmt.Println(maze)
-	fmt.Println(&maze)
-	return ""
+	maze.Play()
+	return fmt.Sprint(maze.player.Password())
 }
 
 func part2(filename string) string {

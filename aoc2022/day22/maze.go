@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -29,6 +30,7 @@ type Maze struct {
 	row        map[Coordinate]Boundary
 	col        map[Coordinate]Boundary
 	directions string
+	player     Player
 }
 
 func (m *Maze) Load(filename string) {
@@ -97,6 +99,79 @@ func (m *Maze) Load(filename string) {
 			}
 		}
 	}
+
+	m.player = Player{
+		location: Point{m.row[1].Min, 1},
+		facing:   Right,
+	}
+}
+
+func (m *Maze) Step() (ok bool) {
+	var from, to Point
+	from = m.player.location
+	to = m.player.Ahead()
+
+	var tile Cell
+	var found bool
+	tile, found = m.tile[to]
+	if !found { // wrap around the map
+		if from.X == to.X { // same column
+			if from.Y > to.Y { // going up and wrapping
+				to.Y = m.col[to.X].Max
+			} else { // going down and wrapping
+				to.Y = m.col[to.X].Min
+			}
+		} else { // same row
+			if from.X > to.X { // going left and wrapping
+				to.X = m.row[to.Y].Max
+			} else { // going right and wrapping
+				to.X = m.row[to.Y].Min
+			}
+		}
+		tile = m.tile[to]
+	}
+
+	switch tile {
+	case Wall:
+		return false // can not move forward
+	case Empty:
+		m.player.location = to
+		return true
+	default:
+		panic(fmt.Sprintf("unsupported tile: %v", tile))
+	}
+}
+
+func (m *Maze) Play() {
+	var buf strings.Builder
+	for _, char := range m.directions {
+		var rotation Rotation
+		switch char {
+		case 'R':
+			rotation = Clockwise
+		case 'L':
+			rotation = CounterClockwise
+		default:
+			buf.WriteRune(char)
+			continue
+		}
+		m.run(buf.String())
+		buf.Reset()
+		m.player.Turn(rotation)
+	}
+	m.run(buf.String())
+}
+
+func (m *Maze) run(far string) {
+	steps, err := strconv.Atoi(far)
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < steps; i++ {
+		if !m.Step() {
+			break
+		}
+	}
 }
 
 func (m *Maze) String() string {
@@ -116,6 +191,20 @@ func (m *Maze) String() string {
 				tile = '#'
 			default:
 				panic(fmt.Sprintf("unsupported tile value: %d", m.tile[cursor]))
+			}
+			if cursor == m.player.location {
+				switch m.player.facing {
+				case Up:
+					tile = '^'
+				case Down:
+					tile = 'v'
+				case Left:
+					tile = '<'
+				case Right:
+					tile = '>'
+				default:
+					panic(fmt.Sprintf("player is facing in invalid direction: %v", m.player.facing))
+				}
 			}
 			b.WriteRune(tile)
 		}
