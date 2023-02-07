@@ -20,6 +20,7 @@ func TestSample(t *testing.T) {
 	}{
 		{"part1", "sample.txt", "152"},
 		{"part2", "sample.txt", ""},
+		{"part1", "input.txt", "85616733059734"},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s/%s", test.input, test.worker), func(t *testing.T) {
