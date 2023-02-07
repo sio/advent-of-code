@@ -8,8 +8,8 @@ import (
 type MonkeyNumber int64
 
 type MonkeyGang struct {
-	members map[string]Monkey
-	cache   map[string]MonkeyNumber
+	member map[string]*Monkey
+	cache  map[string]MonkeyNumber
 }
 
 func (gang *MonkeyGang) Get(name string) MonkeyNumber {
@@ -22,7 +22,7 @@ func (gang *MonkeyGang) Get(name string) MonkeyNumber {
 		return cached
 	}
 
-	monkey, ok := gang.members[name]
+	monkey, ok := gang.member[name]
 	if !ok {
 		panic(fmt.Sprint("invalid monkey name:", name))
 	}
@@ -51,8 +51,8 @@ func (gang *MonkeyGang) Get(name string) MonkeyNumber {
 }
 
 func (gang *MonkeyGang) Parse(filename string) error {
-	if gang.members == nil {
-		gang.members = make(map[string]Monkey)
+	if gang.member == nil {
+		gang.member = make(map[string]*Monkey)
 	}
 
 	var iter LineIterator
@@ -69,7 +69,7 @@ func (gang *MonkeyGang) Parse(filename string) error {
 
 		_, err := fmt.Sscanf(line, "%s %d", &name, &number)
 		if err == nil {
-			gang.members[name] = Monkey{
+			gang.member[name] = &Monkey{
 				Job:    Return,
 				Number: number,
 			}
@@ -82,7 +82,7 @@ func (gang *MonkeyGang) Parse(filename string) error {
 		if err != nil {
 			return fmt.Errorf("could not parse line %q: %w", line, err)
 		}
-		gang.members[name] = Monkey{
+		gang.member[name] = &Monkey{
 			Job:     op,
 			Depends: [...]string{left, right},
 		}
