@@ -5,10 +5,24 @@ import (
 	"strings"
 )
 
-type MonkeyGang map[string]*Monkey
+type MonkeyNumber int64
 
-func (gang MonkeyGang) Get(name string) int64 {
-	monkey, ok := gang[name]
+type MonkeyGang struct {
+	members map[string]Monkey
+	cache   map[string]MonkeyNumber
+}
+
+func (gang *MonkeyGang) Get(name string) MonkeyNumber {
+	if name == "root" { // drop cache
+		gang.cache = make(map[string]MonkeyNumber)
+	}
+
+	cached, ok := gang.cache[name]
+	if ok {
+		return cached
+	}
+
+	monkey, ok := gang.members[name]
 	if !ok {
 		panic(fmt.Sprint("invalid monkey name:", name))
 	}
@@ -17,7 +31,7 @@ func (gang MonkeyGang) Get(name string) int64 {
 	left = monkey.Depends[0]
 	right = monkey.Depends[1]
 
-	var result int64
+	var result MonkeyNumber
 	switch monkey.Job {
 	case Return:
 		return monkey.Number
@@ -32,14 +46,13 @@ func (gang MonkeyGang) Get(name string) int64 {
 	default:
 		panic(fmt.Sprintf("invalid monkey operation: %c", monkey.Job))
 	}
-	monkey.Job = Return
-	monkey.Number = result
+	gang.cache[name] = result
 	return result
 }
 
-func (gang MonkeyGang) Parse(filename string) error {
-	if gang == nil {
-		gang = make(MonkeyGang)
+func (gang *MonkeyGang) Parse(filename string) error {
+	if gang.members == nil {
+		gang.members = make(map[string]Monkey)
 	}
 
 	var iter LineIterator
@@ -52,11 +65,11 @@ func (gang MonkeyGang) Parse(filename string) error {
 		line := strings.ReplaceAll(iter.Value(), ":", "")
 
 		var name string
-		var number int64
+		var number MonkeyNumber
 
 		_, err := fmt.Sscanf(line, "%s %d", &name, &number)
 		if err == nil {
-			gang[name] = &Monkey{
+			gang.members[name] = Monkey{
 				Job:    Return,
 				Number: number,
 			}
@@ -69,7 +82,7 @@ func (gang MonkeyGang) Parse(filename string) error {
 		if err != nil {
 			return fmt.Errorf("could not parse line %q: %w", line, err)
 		}
-		gang[name] = &Monkey{
+		gang.members[name] = Monkey{
 			Job:     op,
 			Depends: [...]string{left, right},
 		}
@@ -89,7 +102,7 @@ const (
 
 type Monkey struct {
 	Job     MonkeyJob
-	Number  int64
+	Number  MonkeyNumber
 	Depends [2]string
 }
 

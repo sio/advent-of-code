@@ -5,7 +5,7 @@ import (
 )
 
 func part1(filename string) string {
-	monkeys := make(MonkeyGang)
+	monkeys := MonkeyGang{}
 	err := monkeys.Parse(filename)
 	if err != nil {
 		panic(err)
