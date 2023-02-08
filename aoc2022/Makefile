@@ -5,9 +5,9 @@ ifdef PROFILE
 ARGS=-cpuprofile $(DAY)/cpu.prof -memprofile $(DAY)/mem.prof
 endif
 
-.PHONY: latest
-latest:  ## run solution for the latest problem and print corrent answers
-latest: input answer
+.PHONY: solve
+solve:  ## run solution for the latest puzzle
+solve: input
 
 .PHONY: input sample
 input sample sample2: build/$(DAY)  ## execute solution against input file or sample
