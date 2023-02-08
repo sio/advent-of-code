@@ -2,7 +2,18 @@ DAY?=$(lastword $(sort $(wildcard day*)))
 GO?=go
 
 ifdef PROFILE
-ARGS=-cpuprofile $(DAY)/cpu.prof -memprofile $(DAY)/mem.prof
+ARGS=-cpuprofile $(DIRECTORY)/cpu.prof -memprofile $(DIRECTORY)/mem.prof
+endif
+
+DIRECTORY=$(DAY)
+ifeq (,$(wildcard $(DIRECTORY)))
+DIRECTORY:=day$(DAY)
+endif
+ifeq (,$(wildcard $(DIRECTORY)))
+DIRECTORY:=day0$(DAY)
+endif
+ifeq (,$(wildcard $(DIRECTORY)))
+$(error Directory not found: $(DAY))
 endif
 
 .PHONY: solve
@@ -10,17 +21,17 @@ solve:  ## run solution for the latest puzzle
 solve: input
 
 .PHONY: input sample
-input sample sample2: build/$(DAY)  ## execute solution against input file or sample
-	$< $(DAY)/$@.txt $(ARGS)
+input sample sample2: build/$(DIRECTORY)  ## execute solution against input file or sample
+	$< $(DIRECTORY)/$@.txt $(ARGS)
 
 .PHONY: build
-build: build/$(DAY)  ## build solution from source code
-build/$(DAY): $(shell find $(DAY) -type f)
-	$(GO) build -o $@ ./$(DAY)
+build: build/$(DIRECTORY)  ## build solution from source code
+build/$(DIRECTORY): $(shell find $(DIRECTORY) -type f)
+	$(GO) build -o $@ ./$(DIRECTORY)
 
 .PHONY: test
 test:  ## run automated tests for current day
-	$(GO) test ./$(DAY) -timeout 15s $(GOTEST_ARGS)
+	$(GO) test ./$(DIRECTORY) -timeout 15s $(GOTEST_ARGS)
 
 .PHONY: test-verbose
 export GOTEST_ARGS
@@ -30,7 +41,7 @@ test-verbose:  ## run tests with increased verbosity
 
 .PHONY: bench
 bench:  ## run benchmarks for current day
-	cd $(DAY) && go test -bench=. -count=3 -benchmem -benchtime=2s -run='^#'
+	cd $(DIRECTORY) && go test -bench=. -count=3 -benchmem -benchtime=2s -run='^#'
 
 .PHONY: all
 all:  ## build and execute all solutions
@@ -38,11 +49,11 @@ all:  ## build and execute all solutions
 
 .PHONY: answer
 answer:  ## show answers for current day
-	grep --color=auto -R 'Your puzzle answer was' $(DAY)
+	grep --color=auto -R 'Your puzzle answer was' $(DIRECTORY)
 
 .PHONY: answers
 answers:  ## show answers for all days
-answers:  DAY=day*/
+answers:  DIRECTORY=day*/
 answers:  answer
 
 .PHONY: fmt
