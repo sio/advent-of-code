@@ -20,6 +20,13 @@ endif
 solve:  ## run solution for the latest puzzle
 solve: input
 
+DAYS=$(wildcard day*)
+DAYS+=$(subst day0,day,$(wildcard day*))
+DAYS:=$(sort $(DAYS))
+.PHONY: $(DAYS)
+$(DAYS):
+	@$(MAKE) DAY=$(subst day,,$@)
+
 .PHONY: input sample
 input sample sample2: build/$(DIRECTORY)  ## execute solution against input file or sample
 	$< $(DIRECTORY)/$@.txt $(ARGS)

@@ -12,7 +12,7 @@ If you stumble upon this repo and decide to run any of my solutions,
 use `Makefile` from current directory.
 
 - Execute latest solution in this repo: `make solve`
-- Execute solution for a specific day: `make solve DAY=4`
+- Execute solution for a specific day: `make solve DAY=4`, also: `make day04`, `make day4`
 - Execute all solutions: `make all`
 - Show answers for my input file: `make answer`, `make answers`, `make answer DAY=4`
 - Print description of Makefile targets: `make help`
