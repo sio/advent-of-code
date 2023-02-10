@@ -17,6 +17,21 @@ type Point struct {
 	X, Y Coordinate
 }
 
+type Step Point
+
+func (p Point) Move(s Step) Point {
+	p.X += s.X
+	p.Y += s.Y
+	return p
+}
+
+func (a Point) Distance(b Point) Step {
+	return Step{
+		X: b.X - a.X,
+		Y: b.Y - a.Y,
+	}
+}
+
 type Cell uint8
 
 const (
@@ -216,4 +231,8 @@ func (m *Maze) String() string {
 	b.WriteRune('\n')
 	b.WriteString(m.directions)
 	return b.String()
+}
+
+func (m *Maze) Contains(p Point) bool {
+	return m.tile[p] != Undefined
 }

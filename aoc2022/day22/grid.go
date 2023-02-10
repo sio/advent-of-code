@@ -13,6 +13,30 @@ const (
 	Up           = 3
 )
 
+func (f Facing) Turn(r Rotation) Facing {
+	if r == Clockwise {
+		f++
+	} else {
+		f--
+	}
+	if f < Right {
+		f = Up
+	}
+	if f > Up {
+		f = Right
+	}
+	return f
+}
+
+func (f Facing) Reverse() Facing {
+	return (f + 2) % 4
+}
+
+func (f Facing) String() string {
+	symbols := [...]string{">", "v", "<", "^"}
+	return symbols[f]
+}
+
 type Rotation bool
 
 const (
@@ -26,17 +50,7 @@ type Player struct {
 }
 
 func (p *Player) Turn(r Rotation) {
-	if r == Clockwise {
-		p.facing++
-	} else {
-		p.facing--
-	}
-	if p.facing < Right {
-		p.facing = Up
-	}
-	if p.facing > Up {
-		p.facing = Right
-	}
+	p.facing = p.facing.Turn(r)
 }
 
 func (p *Player) Password() int {
