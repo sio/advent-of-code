@@ -174,8 +174,12 @@ func (face *CubeFace) AddNeighbor(side Facing, neighbor *CubeFace, into Facing) 
 	face.into[side] = &into
 	fmt.Printf("new forward link\n  from %v\n    to %v\n", face, neighbor)
 
-	if neighbor.neighbor[into.Reverse()] == face {
+	backlink := neighbor.neighbor[into.Reverse()]
+	switch {
+	case backlink == face:
 		return
+	case backlink != nil:
+		panic(fmt.Sprintf("%v: backlink points to a different face already: %v", face, backlink))
 	}
 	neighbor.neighbor[into.Reverse()] = face
 	back := side.Reverse()
