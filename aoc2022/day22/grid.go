@@ -8,9 +8,9 @@ type Facing int
 
 const (
 	Right Facing = 0
-	Down         = 1
-	Left         = 2
-	Up           = 3
+	Down  Facing = 1
+	Left  Facing = 2
+	Up    Facing = 3
 )
 
 func (f Facing) Turn(r Rotation) Facing {

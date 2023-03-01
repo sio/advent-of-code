@@ -70,7 +70,11 @@ func (m *Maze) Load(filename string) {
 	if err := iter.Open(filename); err != nil {
 		panic(err)
 	}
-	defer iter.Close()
+	defer func() {
+		if err := iter.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	m.tile = make(map[Point]Cell)
 	m.row = make(map[Coordinate]Boundary)

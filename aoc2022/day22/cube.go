@@ -27,8 +27,7 @@ func (cube *Cube) String() string {
 }
 
 func (cube *Cube) Face(p Point) *CubeFace {
-	var corner Point
-	corner = Point{
+	var corner Point = Point{
 		X: (p.X-1)/cube.size*cube.size + 1,
 		Y: (p.Y-1)/cube.size*cube.size + 1,
 	}
@@ -42,8 +41,7 @@ func (cube *Cube) Face(p Point) *CubeFace {
 }
 
 func (cube *Cube) Next(cursor Point, direction Facing) (Point, Facing) {
-	var side *CubeFace
-	side = cube.Face(cursor)
+	var side *CubeFace = cube.Face(cursor)
 
 	var next Point
 	next = cursor.Next(direction)
@@ -65,11 +63,8 @@ func (cube *Cube) Next(cursor Point, direction Facing) (Point, Facing) {
 		panic("impossible branching")
 	}
 
-	var nextDirection Facing
-	nextDirection = *side.into[direction]
-
-	var nextSide *CubeFace
-	nextSide = side.neighbor[direction]
+	var nextDirection Facing = *side.into[direction]
+	var nextSide *CubeFace = side.neighbor[direction]
 
 	switch nextDirection {
 	case Up:
@@ -211,8 +206,7 @@ type CubeFace struct {
 }
 
 func (face *CubeFace) Contains(p Point) bool {
-	var delta Step
-	delta = face.corner.Distance(p)
+	var delta Step = face.corner.Distance(p)
 	return delta.X >= 0 && delta.Y >= 0 && delta.X < face.size && delta.Y < face.size
 }
 

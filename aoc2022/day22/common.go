@@ -30,7 +30,11 @@ func main() {
 		if err != nil {
 			log.Fatal("could not create CPU profile: ", err)
 		}
-		defer f.Close() // error handling omitted for example
+		defer func() {
+			if err := f.Close(); err != nil {
+				panic(err)
+			}
+		}()
 		if err := pprof.StartCPUProfile(f); err != nil {
 			log.Fatal("could not start CPU profile: ", err)
 		}
@@ -42,8 +46,12 @@ func main() {
 		if err != nil {
 			log.Fatal("could not create memory profile: ", err)
 		}
-		defer f.Close() // error handling omitted for example
-		runtime.GC()    // get up-to-date statistics
+		defer func() {
+			if err := f.Close(); err != nil {
+				panic(err)
+			}
+		}()
+		runtime.GC() // get up-to-date statistics
 		if err := pprof.WriteHeapProfile(f); err != nil {
 			log.Fatal("could not write memory profile: ", err)
 		}
@@ -61,8 +69,7 @@ func main() {
 }
 
 func execute(part func(string) string, input string, number int) {
-	var result string
-	result = part(input)
+	var result string = part(input)
 	var delimiter string
 	if strings.Contains(result, "\n") {
 		delimiter = "\n"

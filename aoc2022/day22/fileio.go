@@ -74,7 +74,6 @@ func (iter *CharIterator) Value() rune {
 type LineIterator struct {
 	fileIterator
 	scanner *bufio.Scanner
-	value   rune
 }
 
 func (iter *LineIterator) Open(filename string) error {
