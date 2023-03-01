@@ -126,13 +126,15 @@ func (group *ElfGroup) Result() int {
 	return width*height - len(group.elves)
 }
 
-func (group *ElfGroup) Play(rounds int) {
-	for i := 0; i < rounds; i++ {
+func (group *ElfGroup) Play(rounds int) int {
+	var i int
+	for i = 0; i < rounds; i++ {
 		changed := group.Round(i)
 		if !changed {
 			break
 		}
 	}
+	return i
 }
 
 func (group *ElfGroup) Round(index int) bool {
