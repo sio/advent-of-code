@@ -67,6 +67,22 @@ answers:  answer
 fmt:  ## format Go code
 	$(GO) fmt ./...
 
+STATICCHECK=$(shell $(GO) env GOPATH)/bin/staticcheck$(shell $(GO) env GOEXE)
+$(STATICCHECK):
+	$(GO) install honnef.co/go/tools/cmd/staticcheck@latest
+
+ERRCHECK=$(shell $(GO) env GOPATH)/bin/errcheck$(shell $(GO) env GOEXE)
+$(ERRCHECK):
+	$(GO) install github.com/kisielk/errcheck@latest
+
+.PHONY: lint
+lint: $(STATICCHECK) $(ERRCHECK)
+lint:  ## run linter for current day's solution
+	$(GO) fmt ./$(DIRECTORY)
+	$(GO) vet ./$(DIRECTORY)
+	$(STATICCHECK) ./$(DIRECTORY)
+	$(ERRCHECK) ./$(DIRECTORY)
+
 .PHONY: stats
 stats:  ## show stats based on git history
 	@for d in $(sort $(wildcard day??)); \
