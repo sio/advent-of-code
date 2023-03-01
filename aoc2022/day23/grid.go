@@ -30,7 +30,7 @@ type Point struct {
 	X, Y Coordinate
 }
 
-func (p Point) Move(d Direction) Point {
+func (p Point) Look(d Direction) Point {
 	p.X += d.X
 	p.Y += d.Y
 	return p

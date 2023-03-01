@@ -101,3 +101,108 @@ func (group *ElfGroup) updateRectangle() {
 		}
 	}
 }
+
+var Movements = [...]Direction{
+	North,
+	South,
+	West,
+	East,
+}
+
+var Row = map[Direction][3]Direction{
+	North: {NorthWest, North, NorthEast},
+	South: {SouthWest, South, SouthEast},
+	West:  {NorthWest, West, SouthWest},
+	East:  {NorthEast, East, SouthEast},
+}
+
+func (group *ElfGroup) Result() int {
+	group.updateRectangle()
+
+	var width, height int
+	width = int(group.max.X - group.min.X + 1)
+	height = int(group.max.Y - group.min.Y + 1)
+
+	return width*height - len(group.elves)
+}
+
+func (group *ElfGroup) Play(rounds int) {
+	for i := 0; i < rounds; i++ {
+		changed := group.Round(i)
+		if !changed {
+			break
+		}
+	}
+}
+
+func (group *ElfGroup) Round(index int) bool {
+	moves := make(map[Point]Point) // to -> from
+	banned := make(map[Point]bool)
+
+	// Plan movements for each Elf
+	for elf := range group.elves {
+		var hasNeighbors bool
+		for _, direction := range Perimeter {
+			if group.elves.Contains(elf.Look(direction)) {
+				hasNeighbors = true
+				break
+			}
+		}
+		if !hasNeighbors {
+			continue
+		}
+	side_loop:
+		for side := 0; side < len(Movements); side++ {
+			direction := Movements[(side+index)%len(Movements)]
+			for _, neighbor := range Row[direction] {
+				if group.elves.Contains(elf.Look(neighbor)) {
+					continue side_loop
+				}
+			}
+
+			destination := elf.Look(direction)
+
+			if banned[destination] {
+				break
+			}
+			_, taken := moves[destination]
+			if taken {
+				banned[destination] = true
+				delete(moves, destination)
+				break
+			}
+			moves[destination] = elf
+			break
+		}
+	}
+
+	var elfCount = len(group.elves)
+
+	// Remove old Elf locations
+	for _, from := range moves {
+		delete(group.elves, from)
+	}
+
+	// Add new Elf locations
+	for to, from := range moves {
+		if group.elves.Contains(to) {
+			err := group.elves.Add(from) // restore Elf at old location
+			if err != nil {
+				panic(err)
+			}
+			continue
+		}
+		err := group.elves.Add(to)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Sanity check
+	if len(group.elves) != elfCount {
+		fmt.Println(group)
+		panic(fmt.Sprintf("Elf count changed after movements: was %d, now %d", elfCount, len(group.elves)))
+	}
+
+	return len(moves) != 0
+}
