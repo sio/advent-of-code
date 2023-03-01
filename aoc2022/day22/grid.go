@@ -49,6 +49,10 @@ type Player struct {
 	facing   Facing
 }
 
+func (p Player) String() string {
+	return fmt.Sprintf("Player:%v%v", p.location, p.facing)
+}
+
 func (p *Player) Turn(r Rotation) {
 	p.facing = p.facing.Turn(r)
 }
@@ -58,19 +62,5 @@ func (p *Player) Password() int {
 }
 
 func (p *Player) Ahead() Point {
-	var next Point
-	next = p.location
-	switch p.facing {
-	default:
-		panic(fmt.Sprintf("facing unknown direction: %v", p.facing))
-	case Up:
-		next.Y--
-	case Down:
-		next.Y++
-	case Left:
-		next.X--
-	case Right:
-		next.X++
-	}
-	return next
+	return p.location.Next(p.facing)
 }

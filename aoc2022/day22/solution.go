@@ -14,8 +14,7 @@ func part1(filename string) string {
 func part2(filename string) string {
 	maze := &Maze{}
 	maze.Load(filename)
-	cube := &Cube{}
-	cube.Parse(maze)
-	fmt.Println(cube)
-	return ""
+	maze.ParseCube()
+	maze.Play()
+	return fmt.Sprint(maze.player.Password())
 }

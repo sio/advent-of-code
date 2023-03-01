@@ -25,6 +25,22 @@ func (p Point) Move(s Step) Point {
 	return p
 }
 
+func (p Point) Next(to Facing) Point {
+	switch to {
+	default:
+		panic(fmt.Sprintf("facing unknown direction: %v", to))
+	case Up:
+		p.Y--
+	case Down:
+		p.Y++
+	case Left:
+		p.X--
+	case Right:
+		p.X++
+	}
+	return p
+}
+
 func (a Point) Distance(b Point) Step {
 	return Step{
 		X: b.X - a.X,
@@ -46,6 +62,7 @@ type Maze struct {
 	col        map[Coordinate]Boundary
 	directions string
 	player     Player
+	cube       *Cube
 }
 
 func (m *Maze) Load(filename string) {
@@ -121,40 +138,54 @@ func (m *Maze) Load(filename string) {
 	}
 }
 
-func (m *Maze) Step() (ok bool) {
-	var from, to Point
-	from = m.player.location
-	to = m.player.Ahead()
+func (m *Maze) ParseCube() {
+	m.cube = &Cube{}
+	m.cube.Parse(m)
+}
 
-	var tile Cell
-	var found bool
-	tile, found = m.tile[to]
-	if !found { // wrap around the map
-		if from.X == to.X { // same column
-			if from.Y > to.Y { // going up and wrapping
-				to.Y = m.col[to.X].Max
-			} else { // going down and wrapping
-				to.Y = m.col[to.X].Min
-			}
-		} else { // same row
-			if from.X > to.X { // going left and wrapping
-				to.X = m.row[to.Y].Max
-			} else { // going right and wrapping
-				to.X = m.row[to.Y].Min
+func (m *Maze) Step() (ok bool) {
+	var current, next Point
+	current = m.player.location
+	next = m.player.Ahead()
+
+	var facing Facing
+	facing = m.player.facing
+
+	if !m.Contains(next) {
+		if m.cube != nil {
+			// Cube cutout navigation
+			next, facing = m.cube.Next(current, m.player.facing)
+		} else {
+			// Plain maze navigation
+			if current.X == next.X { // same column
+				if current.Y > next.Y { // going up and wrapping
+					next.Y = m.col[next.X].Max
+				} else { // going down and wrapping
+					next.Y = m.col[next.X].Min
+				}
+			} else { // same row
+				if current.X > next.X { // going left and wrapping
+					next.X = m.row[next.Y].Max
+				} else { // going right and wrapping
+					next.X = m.row[next.Y].Min
+				}
 			}
 		}
-		tile = m.tile[to]
 	}
 
-	switch tile {
-	case Wall:
-		return false // can not move forward
-	case Empty:
-		m.player.location = to
-		return true
-	default:
-		panic(fmt.Sprintf("unsupported tile: %v", tile))
+	if next == current {
+		panic(fmt.Sprintf("move without location change: %v", m.player))
 	}
+	if !m.Contains(next) {
+		panic(fmt.Sprintf("wandering outside of the maze: %v", next))
+	}
+
+	if m.tile[next] == Wall {
+		return false
+	}
+	m.player.location = next
+	m.player.facing = facing
+	return true
 }
 
 func (m *Maze) Play() {

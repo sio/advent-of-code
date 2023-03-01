@@ -12,7 +12,7 @@ const (
 )
 
 type Cube struct {
-	face map[Point]*CubeFace
+	face map[Point]*CubeFace // top-left corner -> CubeFace
 	size Coordinate
 }
 
@@ -27,9 +27,75 @@ func (cube *Cube) String() string {
 }
 
 func (cube *Cube) Face(p Point) *CubeFace {
-	p.X /= cube.size
-	p.Y /= cube.size
-	return cube.face[p]
+	var corner Point
+	corner = Point{
+		X: (p.X-1)/cube.size*cube.size + 1,
+		Y: (p.Y-1)/cube.size*cube.size + 1,
+	}
+	var face *CubeFace
+	var found bool
+	face, found = cube.face[corner]
+	if !found {
+		panic(fmt.Sprintf("face calculation failed for %v: got %v", p, corner))
+	}
+	return face
+}
+
+func (cube *Cube) Next(cursor Point, direction Facing) (Point, Facing) {
+	var side *CubeFace
+	side = cube.Face(cursor)
+
+	var next Point
+	next = cursor.Next(direction)
+	if side.Contains(next) {
+		return next, direction
+	}
+
+	var index Coordinate
+	switch direction {
+	case Up:
+		index = cursor.X - side.corner.X
+	case Down:
+		index = side.corner.X + (cube.size - 1) - cursor.X
+	case Right:
+		index = cursor.Y - side.corner.Y
+	case Left:
+		index = side.corner.Y + (cube.size - 1) - cursor.Y
+	default:
+		panic("impossible branching")
+	}
+
+	var nextDirection Facing
+	nextDirection = *side.into[direction]
+
+	var nextSide *CubeFace
+	nextSide = side.neighbor[direction]
+
+	switch nextDirection {
+	case Up:
+		next = Point{
+			X: nextSide.corner.X + index,
+			Y: nextSide.corner.Y + (cube.size - 1),
+		}
+	case Down:
+		next = Point{
+			X: nextSide.corner.X + (cube.size - 1) - index,
+			Y: nextSide.corner.Y,
+		}
+	case Right:
+		next = Point{
+			X: nextSide.corner.X,
+			Y: nextSide.corner.Y + index,
+		}
+	case Left:
+		next = Point{
+			X: nextSide.corner.X + (cube.size - 1),
+			Y: nextSide.corner.Y + (cube.size - 1) - index,
+		}
+	default:
+		panic("impossible branching")
+	}
+	return next, nextDirection
 }
 
 func (cube *Cube) addFace(corner Point) *CubeFace {
@@ -39,6 +105,7 @@ func (cube *Cube) addFace(corner Point) *CubeFace {
 	}
 	cube.face[corner] = &CubeFace{
 		corner: corner,
+		size:   cube.size,
 	}
 	return cube.face[corner]
 }
@@ -138,8 +205,15 @@ func (cube *Cube) Validate() error {
 
 type CubeFace struct {
 	corner   Point // top-left corner of cube face
+	size     Coordinate
 	neighbor [cubeFaceEdges]*CubeFace
 	into     [cubeFaceEdges]*Facing // new facing after steping into neighbor
+}
+
+func (face *CubeFace) Contains(p Point) bool {
+	var delta Step
+	delta = face.corner.Distance(p)
+	return delta.X >= 0 && delta.Y >= 0 && delta.X < face.size && delta.Y < face.size
 }
 
 func (face *CubeFace) String() string {
@@ -172,7 +246,7 @@ func (face *CubeFace) AddNeighbor(side Facing, neighbor *CubeFace, into Facing) 
 	}
 	face.neighbor[side] = neighbor
 	face.into[side] = &into
-	fmt.Printf("new forward link\n  from %v\n    to %v\n", face, neighbor)
+	//fmt.Printf("new forward link\n  from %v\n    to %v\n", face, neighbor)
 
 	backlink := neighbor.neighbor[into.Reverse()]
 	switch {
@@ -184,5 +258,5 @@ func (face *CubeFace) AddNeighbor(side Facing, neighbor *CubeFace, into Facing) 
 	neighbor.neighbor[into.Reverse()] = face
 	back := side.Reverse()
 	neighbor.into[into.Reverse()] = &back
-	fmt.Printf("new backward link\n  from %v\n    to %v\n", neighbor, face)
+	//fmt.Printf("new backward link\n  from %v\n    to %v\n", neighbor, face)
 }
