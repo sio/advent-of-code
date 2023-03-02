@@ -19,6 +19,7 @@ type Search struct {
 	basin     *BlizzardBasin
 	proximity []ScaleUnit
 	cache     []PointSet
+	seen      map[SearchCursor]bool
 }
 
 var Stay = Direction{0, 0}
@@ -32,6 +33,7 @@ var Moves = [...]Direction{
 }
 
 func (search *Search) ShortestPath() int {
+	search.seen = make(map[SearchCursor]bool)
 	search.recurse(SearchCursor{location: search.basin.entrance})
 	for index, distance := range search.proximity {
 		if distance == 0 {
@@ -43,6 +45,12 @@ func (search *Search) ShortestPath() int {
 }
 
 func (search *Search) recurse(cursor SearchCursor) (ok bool) {
+	// Avoid infinite loops
+	if search.seen[cursor] {
+		return false
+	}
+	search.seen[cursor] = true
+
 	// Termination condition: failure
 	_, isWall := search.basin.wall[cursor.location]
 	if isWall {
@@ -68,31 +76,20 @@ func (search *Search) recurse(cursor SearchCursor) (ok bool) {
 	}
 
 	// Limit backtracking
-	const backtrackThreshold = 2
-	if search.proximity[cursor.round]+backtrackThreshold < distance {
-		return false
+	const backtrackThreshold = 10
+	for i := 0; i < cursor.round-backtrackThreshold; i++ {
+		if search.proximity[i]+backtrackThreshold < distance {
+			return false // another shorter path has achieved a significantly better result
+		}
+		if search.proximity[i] <= 1 {
+			return false // we have already found a shorter path to the target
+		}
 	}
 
 	// Always attempt to get closer to the target
 	var next SearchCursor
 	var moved bool
-	for _, direction := range []Direction{Down, Right} {
-		next = cursor.Move(direction)
-		if search.recurse(next) {
-			moved = true
-		}
-	}
-	if moved {
-		return true
-	}
-
-	// Stay in place if can not advance
-	if search.recurse(cursor.Move(Stay)) {
-		return true
-	}
-
-	// Backtrack if can not do anything else
-	for _, direction := range []Direction{Up, Left} {
+	for _, direction := range Moves {
 		next = cursor.Move(direction)
 		if search.recurse(next) {
 			moved = true

@@ -20,6 +20,7 @@ func TestSolution(t *testing.T) {
 	}{
 		{"part1", "sample.txt", "18"},
 		{"part1", "sample2.txt", "10"},
+		{"part1", "input.txt", "311"},
 		{"part2", "sample.txt", ""},
 	}
 	for _, test := range tests {
