@@ -7,12 +7,9 @@ import (
 func part1(filename string) string {
 	basin := &BlizzardBasin{}
 	basin.Load(filename)
-	fmt.Println(basin)
-	for i := 0; i < 18; i++ {
-		fmt.Println("Round", i)
-		fmt.Println(basin.Render(i))
-	}
-	return ""
+
+	search := Search{basin: basin}
+	return fmt.Sprint(search.ShortestPath())
 }
 
 func part2(filename string) string {

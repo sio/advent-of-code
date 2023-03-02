@@ -6,13 +6,6 @@ import (
 	"strings"
 )
 
-var Moves = [...]Direction{
-	Down,
-	Right,
-	Up,
-	Left,
-}
-
 type BlizzardBasin struct {
 	width, height  ScaleUnit
 	entrance, exit Point
@@ -82,6 +75,10 @@ func (bb *BlizzardBasin) Load(filename string) {
 		cursor.X++
 	}
 	bb.height = bb.exit.Y - bb.entrance.Y + 1
+
+	// Add walls around entrance and exit to block wandering off out of bounds
+	bb.wall.Add(bb.entrance.Look(Up))
+	bb.wall.Add(bb.exit.Look(Down))
 }
 
 func (bb *BlizzardBasin) Blizzards(round int) PointSet {

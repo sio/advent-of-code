@@ -47,6 +47,18 @@ func (p Point) Look(d Direction) Point {
 	return p
 }
 
+// Manhattan distance
+func (start Point) Distance(end Point) ScaleUnit {
+	return abs(start.X-end.X) + abs(start.Y-end.Y)
+}
+
+func abs(n ScaleUnit) ScaleUnit {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
 type void struct{}
 
 type PointSet map[Point]void
