@@ -5,8 +5,9 @@ import (
 )
 
 type SearchCursor struct {
-	location Point
-	round    int
+	location    Point
+	destination Point
+	round       int
 }
 
 func (cursor SearchCursor) Move(in Direction) SearchCursor {
@@ -32,9 +33,13 @@ var Moves = [...]Direction{
 	Left,
 }
 
-func (search *Search) ShortestPath() int {
+func (search *Search) ShortestPath(from, to Point, startTime int) int {
 	search.seen = make(map[SearchCursor]bool)
-	search.recurse(SearchCursor{location: search.basin.entrance})
+	search.recurse(SearchCursor{
+		location:    from,
+		destination: to,
+		round:       startTime,
+	})
 	for index, distance := range search.proximity {
 		if distance == 0 {
 			return index
@@ -61,7 +66,7 @@ func (search *Search) recurse(cursor SearchCursor) (ok bool) {
 	}
 
 	// Termination condition: success
-	distance := cursor.location.Distance(search.basin.exit)
+	distance := cursor.location.Distance(cursor.destination)
 	if cursor.round > len(search.proximity) {
 		panic("missed a proximity record in one of previous steps")
 	}
@@ -86,7 +91,7 @@ func (search *Search) recurse(cursor SearchCursor) (ok bool) {
 		}
 	}
 
-	// Always attempt to get closer to the target
+	// Try all allowed moves
 	var next SearchCursor
 	var moved bool
 	for _, direction := range Moves {

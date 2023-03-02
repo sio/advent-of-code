@@ -10,9 +10,34 @@ func part1(filename string) string {
 	fmt.Println(basin)
 
 	search := Search{basin: basin}
-	return fmt.Sprint(search.ShortestPath())
+	commute := search.ShortestPath(
+		basin.entrance,
+		basin.exit,
+		0,
+	)
+	return fmt.Sprint(commute)
 }
 
 func part2(filename string) string {
-	return ""
+	basin := &BlizzardBasin{}
+	basin.Load(filename)
+	search := Search{basin: basin}
+
+	var commute int
+	commute += search.ShortestPath(
+		basin.entrance,
+		basin.exit,
+		commute,
+	)
+	commute += search.ShortestPath(
+		basin.exit,
+		basin.entrance,
+		commute,
+	)
+	commute += search.ShortestPath(
+		basin.entrance,
+		basin.exit,
+		commute,
+	)
+	return fmt.Sprint(commute)
 }
