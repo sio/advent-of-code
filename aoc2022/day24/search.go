@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 )
 
 type SearchCursor struct {
@@ -25,7 +26,7 @@ type Search struct {
 
 var Stay = Direction{0, 0}
 
-var Moves = [...]Direction{
+var Moves = []Direction{
 	Down,
 	Right,
 	Stay,
@@ -35,14 +36,21 @@ var Moves = [...]Direction{
 
 func (search *Search) ShortestPath(from, to Point, startTime int) int {
 	search.seen = make(map[SearchCursor]bool)
+
+	distance := from.Distance(to)
+	search.proximity = make([]ScaleUnit, startTime+1)
+	for i := 0; i <= startTime; i++ {
+		search.proximity[i] = distance
+	}
+
 	search.recurse(SearchCursor{
 		location:    from,
 		destination: to,
 		round:       startTime,
 	})
-	for index, distance := range search.proximity {
-		if distance == 0 {
-			return index
+	for index := startTime; index < len(search.proximity); index++ {
+		if search.proximity[index] == 0 {
+			return index - startTime
 		}
 	}
 	fmt.Println("Best proximity by round:", search.proximity)
@@ -67,6 +75,7 @@ func (search *Search) recurse(cursor SearchCursor) (ok bool) {
 
 	// Termination condition: success
 	distance := cursor.location.Distance(cursor.destination)
+
 	if cursor.round > len(search.proximity) {
 		panic("missed a proximity record in one of previous steps")
 	}
@@ -81,9 +90,9 @@ func (search *Search) recurse(cursor SearchCursor) (ok bool) {
 	}
 
 	// Limit backtracking
-	const backtrackThreshold = 10
+	const backtrackThreshold = 30
 	for i := 0; i < cursor.round-backtrackThreshold; i++ {
-		if search.proximity[i]+backtrackThreshold < distance {
+		if search.proximity[i] < distance {
 			return false // another shorter path has achieved a significantly better result
 		}
 		if search.proximity[i] <= 1 {
@@ -94,6 +103,11 @@ func (search *Search) recurse(cursor SearchCursor) (ok bool) {
 	// Try all allowed moves
 	var next SearchCursor
 	var moved bool
+	sort.Slice(Moves, func(i, j int) bool {
+		iDistance := cursor.location.Look(Moves[i]).Distance(cursor.destination)
+		jDistance := cursor.location.Look(Moves[j]).Distance(cursor.destination)
+		return iDistance < jDistance
+	})
 	for _, direction := range Moves {
 		next = cursor.Move(direction)
 		if search.recurse(next) {
