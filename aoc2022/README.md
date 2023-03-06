@@ -2,9 +2,15 @@
 
 This is the first time I'm participating in [Advent of Code](https://adventofcode.com)
 
-I will be using Go. I've started writing in this language very recently
-(one month ago) - practice should help me to develop some intuition and
-muscle memory to become a proper Gopher :)
+I'm using Go. I've started writing in this language very recently (one month
+before AoC). Solving these puzzles helped me to develop some intuition and
+muscle memory to become a better Gopher :)
+
+## All puzzles for AoC 2022 are done!
+
+<center>
+<img alt="AoC 2022 stats for Vitaly Potyarkin" src="stars.svg"/>
+</center>
 
 ## Usage
 
