@@ -8,6 +8,12 @@ muscle memory to become a better Gopher :)
 
 ## All puzzles for AoC 2022 are done!
 
+<!--
+HOWTO: SVG screenshot of a web page
+- Print to PDF
+- Open PDF in Inkscape
+- Edit and save to SVG
+-->
 <center>
 <img alt="AoC 2022 stats for Vitaly Potyarkin" src="stars.svg"/>
 </center>
