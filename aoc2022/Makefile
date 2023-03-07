@@ -48,7 +48,7 @@ test-verbose:  ## run tests with increased verbosity
 
 .PHONY: bench
 bench:  ## run benchmarks for current day
-	cd $(DIRECTORY) && go test -bench=. -count=3 -benchmem -benchtime=2s -run='^#'
+	cd $(DIRECTORY) && $(GO) test -bench=. -count=3 -benchmem -benchtime=2s -run='^#'
 
 .PHONY: all
 all:  ## build and execute all solutions
