@@ -18,7 +18,9 @@ HOWTO: SVG screenshot of a web page
 - Edit and save to SVG
 -->
 <center>
+<a href="https://potyarkin.ml/posts/2023/aoc2022/">
 <img alt="AoC 2022 stats for Vitaly Potyarkin" src="stars.svg"/>
+</a>
 </center>
 
 ## Usage
