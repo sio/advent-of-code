@@ -8,6 +8,9 @@ muscle memory to become a better Gopher :)
 
 ## All puzzles for AoC 2022 are done!
 
+Read about this adventure in my blog:
+[Advent of Code 2022 was fun!](https://potyarkin.ml/posts/2023/aoc2022/)
+
 <!--
 HOWTO: SVG screenshot of a web page
 - Print to PDF
