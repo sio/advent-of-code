@@ -1,6 +1,6 @@
 module Day01.Solve (day01) where
 
-import Data.Maybe (Maybe(..))
+import Data.List (List(..))
 
 import AOC
 
@@ -12,8 +12,8 @@ day01 =
   , samples
   }
 
-samples :: Array Sample
-samples = []
+samples :: List Sample
+samples = Nil
 
 solve :: Input -> Output
-solve _ = Output (Solution Empty Empty) [] Nothing
+solve _ = Output (Solution Empty Empty) Nil Ok
