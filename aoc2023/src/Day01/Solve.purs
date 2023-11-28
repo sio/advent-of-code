@@ -6,7 +6,7 @@ import AOC
 
 day01 :: Day
 day01 =
-  { index: 0
+  { index: 1
   , title: "Sample AoC solution"
   , solve
   , samples

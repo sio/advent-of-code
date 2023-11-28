@@ -10,7 +10,7 @@ type Day =
   , samples :: List Sample
   }
 
-newtype Input = Input String
+type Input = String
 data Output = Output Solution Debug Status
 
 data Status = Ok | Error String
