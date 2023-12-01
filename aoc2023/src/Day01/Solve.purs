@@ -15,5 +15,5 @@ day01 =
 samples :: List Sample
 samples = Nil
 
-solve :: Input -> Output
-solve _ = Output (Solution Empty Empty) Nil Ok
+solve :: Puzzle -> Solution
+solve _ = Solution Nil Empty Empty

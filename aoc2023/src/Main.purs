@@ -1,8 +1,8 @@
 module Main where
 
 import Prelude
-import Data.List (head)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.List ((!!))
+import Data.Maybe (Maybe(..))
 
 import Effect (Effect)
 import Halogen as H
@@ -16,47 +16,79 @@ import AOC
 
 import Day01.Solve
 
+days :: Array Day
 days =
   [ day01
   ]
 
 type State =
-  { day :: Day
-  , puzzle :: Input
-  , result :: Output
-  , expect :: Maybe Solution
+  { day    :: Day
+  , puzzle :: Puzzle
+  , result :: Solution
+  , check  :: Solution -> Boolean
   }
 
 initialState :: forall input. input -> State
-initialState _ =
-  { day: day
-  , puzzle: puzzle
+initialState _ = setState day01 0
+
+setState :: Day -> Int -> State
+setState day sampleIndex =
+  { day
+  , puzzle
   , result: day.solve puzzle
-  , expect: case sample of
-              Nothing -> Nothing
-              Just (Sample _ solution) -> Just solution
+  , check:  case sample of
+              Nothing -> const true
+              Just s  -> match s
   } where
-      day = day01
-      sample = head day.samples
+      sample = day.samples !! sampleIndex
       puzzle = case sample of
                 Nothing -> ""
-                Just (Sample i _) -> i
+                Just (Sample i _ _) -> i
 
 data Action = UserInput String
+
+handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
+handleAction (UserInput s) =
+  H.modify_ \state -> state { puzzle = s, result = state.day.solve s, check = const true }
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
   HH.main_
-    [ HH.textarea
+    [ renderHeader state.day
+    , HH.textarea
         [ HE.onValueChange UserInput
         , HP.value state.puzzle
+        , HP.classes [ HH.ClassName "puzzle" ]
         ]
-    , HH.div_ [HH.text state.puzzle]
+    , renderSolution state.result
+    , renderCheck $ state.check state.result
     ]
-
-handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
-handleAction (UserInput s) =
-  H.modify_ \state -> state { puzzle = s, expect = Nothing }
+  where
+    renderHeader d = HH.h1_ [HH.text $ "Day " <> show d.index <> ": " <> d.title]
+    renderSolution (Solution log part1 part2) = HH.div_
+      [ renderAnswer part1
+      , renderAnswer part2
+      , renderLog log
+      ]
+    renderAnswer Empty = HH.div_ [HH.text "Not solved"]
+    renderAnswer (Numeric n) = HH.div
+      [ HP.classes
+        [ HH.ClassName "numeric"
+        , HH.ClassName "answer"
+        ]
+      ]
+      [ HH.text $ show n ]
+    renderAnswer (Textual t) = HH.div
+      [ HP.classes
+        [ HH.ClassName "textual"
+        , HH.ClassName "answer"
+        ]
+      ]
+      [ HH.code_ [HH.text t] ]
+    renderLog l = HH.code_ [HH.text $ show l]
+    renderCheck c = HH.div
+      [HP.classes [HH.ClassName $ "sample-match-" <> show c]]
+      [HH.text $ if c then "OK" else "FAIL"]
 
 component :: forall query input output m. H.Component query input output m
 component =

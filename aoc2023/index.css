@@ -1,0 +1,16 @@
+body {
+  margin: 4rem auto;
+  max-width: 60rem;
+  line-height: 1.6;
+  font-size: 1.25rem;
+  color: #444;
+  padding: 0 10px
+}
+h1,h2,h3 {
+  line-height: 1.2;
+}
+
+.puzzle {
+  width: 100%;
+  min-height: 10em;
+}
