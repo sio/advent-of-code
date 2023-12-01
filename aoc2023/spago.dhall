@@ -11,7 +11,8 @@ When creating a new Spago project, you can use
 to generate this file without the comments in this block.
 -}
 { name = "aoc2023"
-, dependencies = [ "console", "effect", "halogen", "lists", "maybe", "prelude" ]
+, dependencies =
+  [ "console", "effect", "halogen", "lists", "maybe", "prelude", "strings" ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }

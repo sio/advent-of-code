@@ -32,9 +32,9 @@ instance Eq Part where
 data Answer   = Numeric Int | Textual String | Empty
 derive instance Eq Answer
 
-data Sample   = Sample Puzzle Answer Answer
+data Sample   = Sample Answer Answer Puzzle
 match :: Sample -> Solution -> Boolean
-match (Sample _ want1 want2) (Solution _ got1 got2) = (want1 == got1) && (want2 == got2)
+match (Sample want1 want2 _) (Solution _ got1 got2) = (want1 == got1) && (want2 == got2)
 
 type Log = List LogEntry
 data LogEntry = Info String | Error String

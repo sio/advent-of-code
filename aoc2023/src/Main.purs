@@ -14,7 +14,7 @@ import Halogen.VDom.Driver (runUI)
 
 import AOC
 
-import Day01.Solve
+import Day01.Solve (day01)
 
 days :: Array Day
 days =
@@ -43,7 +43,7 @@ setState day sampleIndex =
       sample = day.samples !! sampleIndex
       puzzle = case sample of
                 Nothing -> ""
-                Just (Sample i _ _) -> i
+                Just (Sample _ _ i) -> i
 
 data Action = UserInput String
 
@@ -64,7 +64,10 @@ render state =
     , renderCheck $ state.check state.result
     ]
   where
-    renderHeader d = HH.h1_ [HH.text $ "Day " <> show d.index <> ": " <> d.title]
+    renderHeader d = HH.header_
+      [ HH.h1_ [HH.text "Advent of Code in Purescript" ]
+      , HH.h2_ [HH.text $ "Day " <> show d.index <> ": " <> d.title]
+      ]
     renderSolution (Solution log part1 part2) = HH.div_
       [ renderAnswer part1
       , renderAnswer part2
