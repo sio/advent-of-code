@@ -16,3 +16,11 @@ build: $(shell find -type f -name '*.purs')
 .PHONY: serve
 serve: build
 	python3 -m http.server --bind 127.0.0.1
+
+.PHONY: messy-setup
+messy-setup:
+	curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+	bash -c "\
+		source ~/.nvm/nvm.sh && \
+		nvm install node && \
+		npm install -g purescript spago esbuild"
