@@ -3,6 +3,8 @@ module Main where
 import Prelude
 import Data.List ((!!))
 import Data.Maybe (Maybe(..))
+import Data.Traversable (scanl)
+import Data.Array (fromFoldable)
 
 import Effect (Effect)
 import Halogen as H
@@ -45,16 +47,19 @@ setState day sampleIndex =
                 Nothing -> ""
                 Just (Sample _ _ i) -> i
 
-data Action = UserInput String
+data Action = UserInput String | LoadSample Int
 
 handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
 handleAction (UserInput s) =
   H.modify_ \state -> state { puzzle = s, result = state.day.solve s, check = const true }
+handleAction (LoadSample n) =
+  H.modify_ \state -> (setState state.day n)
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
   HH.main_
     [ renderHeader state.day
+    , renderSamples state.day
     , HH.textarea
         [ HE.onValueChange UserInput
         , HP.value state.puzzle
@@ -68,6 +73,10 @@ render state =
       [ HH.h1_ [HH.text "Advent of Code in Purescript" ]
       , HH.h2_ [HH.text $ "Day " <> show d.index <> ": " <> d.title]
       ]
+    renderSamples d = HH.ul [] $
+      map renderSample $ fromFoldable $ scanl (\x _ -> x + 1) 0 d.samples
+    renderSample i =
+      HH.li [HE.onClick (\_ -> LoadSample (i-1))] [HH.text $ "Sample " <> show i]
     renderSolution (Solution log part1 part2) = HH.div_
       [ renderAnswer part1
       , renderAnswer part2
