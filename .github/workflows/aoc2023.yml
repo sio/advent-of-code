@@ -4,8 +4,6 @@ on:
   push:
     paths:
       - aoc2023/**
-    branches:
-      - master
 
 jobs:
   aoc2023:
@@ -22,7 +20,14 @@ jobs:
       - run: npm install -g purescript@0.15.13 spago@0.21.0 esbuild@0.19.8
       - run: make publish
 
+      - uses: actions/upload-artifact@v2
+        with:
+          name: public
+          if-no-files-found: error
+          path: ./public/**
+
       - uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.ref == 'refs/heads/master' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
