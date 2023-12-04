@@ -3,7 +3,9 @@ name: aoc2023
 on:
   push:
     paths:
+      - .github/workflows/**
       - aoc2023/**
+  workflow_dispatch:
 
 jobs:
   aoc2023:
