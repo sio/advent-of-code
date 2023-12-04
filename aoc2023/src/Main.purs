@@ -1,7 +1,7 @@
 module Main where
 
 import Prelude
-import Data.List ((!!))
+import Data.List (List(..), (!!))
 import Data.Maybe (Maybe(..))
 import Data.Traversable (scanl)
 import Data.Array (fromFoldable)
@@ -27,7 +27,7 @@ type State =
   { day    :: Day
   , puzzle :: Puzzle
   , result :: Solution
-  , check  :: Solution -> Boolean
+  , check  :: Maybe (Solution -> Boolean)
   }
 
 initialState :: forall input. input -> State
@@ -38,9 +38,7 @@ setState day sampleIndex =
   { day
   , puzzle
   , result: day.solve puzzle
-  , check:  case sample of
-              Nothing -> const true
-              Just s  -> match s
+  , check:  map match sample
   } where
       sample = day.samples !! sampleIndex
       puzzle = case sample of
@@ -51,7 +49,7 @@ data Action = UserInput String | LoadSample Int
 
 handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
 handleAction (UserInput s) =
-  H.modify_ \state -> state { puzzle = s, result = state.day.solve s, check = const true }
+  H.modify_ \state -> state { puzzle = s, result = state.day.solve s, check = Nothing }
 handleAction (LoadSample n) =
   H.modify_ \state -> (setState state.day n)
 
@@ -66,22 +64,25 @@ render state =
         , HP.classes [ HH.ClassName "puzzle" ]
         ]
     , renderSolution state.result
-    , renderCheck $ state.check state.result
+    , renderCheck state.check
     ]
   where
     renderHeader d = HH.header_
       [ HH.h1_ [HH.text "Advent of Code in Purescript" ]
       , HH.h2_ [HH.text $ "Day " <> show d.index <> ": " <> d.title]
       ]
+
     renderSamples d = HH.ul [] $
       map renderSample $ fromFoldable $ scanl (\x _ -> x + 1) 0 d.samples
     renderSample i =
       HH.li [HE.onClick (\_ -> LoadSample (i-1))] [HH.text $ "Sample " <> show i]
+
     renderSolution (Solution log part1 part2) = HH.div_
       [ renderAnswer part1
       , renderAnswer part2
       , renderLog log
       ]
+
     renderAnswer Empty = HH.div_ [HH.text "Not solved"]
     renderAnswer (Numeric n) = HH.div
       [ HP.classes
@@ -97,10 +98,15 @@ render state =
         ]
       ]
       [ HH.code_ [HH.text t] ]
+
+    renderLog Nil = HH.text ""
     renderLog l = HH.code_ [HH.text $ show l]
-    renderCheck c = HH.div
+
+    renderCheck Nothing = HH.text ""
+    renderCheck (Just check) = HH.div
       [HP.classes [HH.ClassName $ "sample-match-" <> show c]]
       [HH.text $ if c then "OK" else "FAIL"]
+      where c = check state.result
 
 component :: forall query input output m. H.Component query input output m
 component =
