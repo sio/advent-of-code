@@ -1,0 +1,30 @@
+name: aoc2023
+
+on:
+  push:
+    paths:
+      - aoc2023/**
+    branches:
+      - master
+
+jobs:
+  aoc2023:
+    runs-on: ubuntu-latest
+    container: node:21
+    defaults:
+      run:
+        working-directory: aoc2023
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - run: npm install -g purescript@0.15.13 spago@0.21.0 esbuild@0.19.8
+      - run: make publish
+
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: pages
+          keep_files: true

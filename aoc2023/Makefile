@@ -17,11 +17,12 @@ build: $(shell find -type f -name '*.purs')
 serve: build
 	python3 -m http.server --bind 127.0.0.1
 
+PUBLIC=./public/2023/
 .PHONY: publish
 publish: build
-	rm -rfv public/
-	mkdir public/
-	cp -v index.* public/
+	rm -rfv $(PUBLIC)
+	mkdir -p $(PUBLIC)
+	cp -v index.* $(PUBLIC)
 
 .PHONY: messy-setup
 messy-setup:
