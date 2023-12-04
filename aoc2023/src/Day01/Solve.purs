@@ -25,7 +25,7 @@ samples =
 pqr3stu8vwx
 a1b2c3d4e5f
 treb7uchet"""
-  : Sample Empty (Numeric 281)
+  : Sample (Numeric 209) (Numeric 281)
       """two1nine
 eightwothree
 abcone2threexyz
@@ -46,7 +46,7 @@ solve puzzle = combine (part1 puzzle) (part2 puzzle)
 data State = State (Maybe Int) (Maybe Int) Int
 
 calibrationValue :: String -> Answer
-calibrationValue puzzle = Numeric $ unpack $ last puzzle
+calibrationValue = Numeric <<< unpack <<< iterate
   where
     initial :: State
     initial = State Nothing Nothing 0
@@ -56,8 +56,8 @@ calibrationValue puzzle = Numeric $ unpack $ last puzzle
     unpack (State _ Nothing x) = x
     unpack (State (Just first) (Just last) sum) = sum + first * 10 + last
 
-    last :: String -> State
-    last s = foldl parse initial (toCodePointArray s)
+    iterate :: String -> State
+    iterate = foldl parse initial <<< toCodePointArray
 
     digit :: CodePoint -> Maybe Int
     digit c = if delta < 10 && delta >= 0 then Just delta else Nothing
