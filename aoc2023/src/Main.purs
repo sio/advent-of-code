@@ -99,7 +99,7 @@ render state =
         , HH.ClassName "answer"
         ]
       ]
-      [ HH.code_ [HH.text t] ]
+      [ HH.pre_ [HH.text t] ]
 
     renderLog Nil = HH.text ""
     renderLog l = HH.code_ [HH.text $ show l]
