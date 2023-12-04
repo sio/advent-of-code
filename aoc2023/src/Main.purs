@@ -70,7 +70,9 @@ render state =
     renderHeader d = HH.header_
       [ HH.h1_ [HH.text "Advent of Code in Purescript" ]
       , HH.h2_ [HH.text $ "Day " <> show d.index <> ": " <> d.title]
+      , HH.a [HP.href url] [HH.text url]
       ]
+      where url = "https://adventofcode.com/2023/day/" <> show d.index
 
     renderSamples d = HH.ul [] $
       map renderSample $ fromFoldable $ scanl (\x _ -> x + 1) 0 d.samples
