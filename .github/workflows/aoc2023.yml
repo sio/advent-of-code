@@ -24,12 +24,12 @@ jobs:
         with:
           name: public
           if-no-files-found: error
-          path: ./public/**
+          path: ./aoc2023/public/**
 
       - uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.ref == 'refs/heads/master' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+          publish_dir: ./aoc2023/public
           publish_branch: pages
           keep_files: true
