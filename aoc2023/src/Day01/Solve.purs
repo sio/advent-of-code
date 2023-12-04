@@ -1,12 +1,11 @@
 module Day01.Solve where
 
 import Prelude
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Foldable (foldl)
+import Data.Maybe (Maybe(..))
 import Data.List (List(..), (:))
-import Data.String (uncons)
-import Data.String.CodePoints (codePointFromChar)
+import Data.String.CodePoints (CodePoint, toCodePointArray, codePointFromChar)
 import Data.Enum (fromEnum)
-import Data.Tuple (Tuple(..))
 
 
 import AOC
@@ -29,50 +28,40 @@ treb7uchet"""
   : Nil )
 
 
-int :: Maybe Int -> Int
-int x = fromMaybe 0 x
-
 solve :: Puzzle -> Solution
 solve puzzle = combine (part1 puzzle) (part2 puzzle)
   where
-    part1 p = Part Nil $ Numeric $ textValue p
+    part1 p = Part Nil $ calibrationValue p
     part2 _ = Part Nil Empty
 
-textValue = go Nothing Nothing 0 where
-  go :: Maybe Int -> Maybe Int -> Int -> String -> Int
-  go (Just first) (Just last) total "" = total + first * 10 + last
-  go Nothing Nothing total "" = total
-  go Nothing _ total text =
-    let
-      ParseResult first _ tail = headDigit text
-    in
-      go first Nothing total tail
-  go first Nothing total text =
-    let
-      ParseResult last _ tail = headDigit text
-    in
-      go first last total tail
-  go first last total text =
-    case headDigit text of
-      ParseResult Nothing _  tail -> go first last total tail
-      ParseResult next false tail -> go first next total tail
-      ParseResult next true  tail -> go next Nothing (total + (int first) * 10 + int last) tail
+data State = State (Maybe Int) (Maybe Int) Int
 
-data ParseResult = ParseResult (Maybe Int) Boolean String
-headDigit :: String -> ParseResult
-headDigit = go false where
-  go :: Boolean -> String -> ParseResult
-  go newline line =
-    case (uncons line) of
-      Nothing -> ParseResult Nothing newline ""
-      Just {head, tail} ->
-        let
-          digit = (fromEnum head) - (fromEnum (codePointFromChar '0'))
-          br = (head == codePointFromChar '\n' || newline)
-        in
-          if
-            digit < 10 && digit >= 0
-          then
-            ParseResult (Just digit) br tail
-          else
-            go br tail
+calibrationValue :: String -> Answer
+calibrationValue puzzle = Numeric $ unpack $ last puzzle
+  where
+    initial :: State
+    initial = State Nothing Nothing 0
+
+    unpack :: State -> Int
+    unpack (State Nothing _ x) = x
+    unpack (State _ Nothing x) = x
+    unpack (State (Just first) (Just last) sum) = sum + first * 10 + last
+
+    last :: String -> State
+    last s = foldl parse initial (toCodePointArray s)
+
+    digit :: CodePoint -> Maybe Int
+    digit c = if delta < 10 && delta >= 0 then Just delta else Nothing
+      where
+        delta = (fromEnum c) - (fromEnum $ codePointFromChar '0')
+
+    parse :: State -> CodePoint -> State
+    parse state c | c == codePointFromChar '\n' = State Nothing Nothing (unpack state)
+    parse (State Nothing _ sum) c = State (digit c) (digit c) sum
+    parse (State first last sum) c =
+      let
+        d = digit c
+      in case d of
+        Nothing -> State first last sum
+        _ -> State first d sum
+

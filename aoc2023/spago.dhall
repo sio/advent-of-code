@@ -12,7 +12,16 @@ to generate this file without the comments in this block.
 -}
 { name = "aoc2023"
 , dependencies =
-  [ "console", "effect", "halogen", "lists", "maybe", "prelude", "strings" ]
+  [ "console"
+  , "effect"
+  , "enums"
+  , "foldable-traversable"
+  , "halogen"
+  , "lists"
+  , "maybe"
+  , "prelude"
+  , "strings"
+  ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }
