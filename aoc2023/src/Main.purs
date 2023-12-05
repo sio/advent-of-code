@@ -64,6 +64,7 @@ render state =
         , HP.classes [ HH.ClassName "puzzle" ]
         ]
     , renderSolution state.result
+    , renderFooter
     ]
   where
     renderHeader d = HH.header_
@@ -77,6 +78,11 @@ render state =
         prefix = "https://adventofcode.com/2023/day/"
         dayUrl = prefix <> show d.index
         puzzleUrl = dayUrl <> "/input"
+
+    renderFooter = HH.footer_
+      [HH.a [HP.href github] [HH.text github]]
+      where
+        github = "https://github.com/sio/advent-of-code"
 
     renderSamples d = HH.div_ $
       map renderSample $ fromFoldable $ scanl (\x _ -> x + 1) 0 d.samples
