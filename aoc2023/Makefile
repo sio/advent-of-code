@@ -7,6 +7,7 @@ endif
 
 ifneq (,$(WATCH))
 SPAGO_ARGS+=--watch
+SPAGO_TEST_ARGS+=--watch
 endif
 
 .PHONY: build
