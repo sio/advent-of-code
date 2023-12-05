@@ -64,45 +64,46 @@ render state =
         , HP.classes [ HH.ClassName "puzzle" ]
         ]
     , renderSolution state.result
-    , renderCheck state.check
     ]
   where
     renderHeader d = HH.header_
       [ HH.h1_ [HH.text "Advent of Code in Purescript" ]
       , HH.h2_ [HH.text $ "Day " <> show d.index <> ": " <> d.title]
-      , HH.a [HP.href url] [HH.text url]
+      , HH.a [HP.href dayUrl] [HH.text "Puzzle description"]
+      , HH.text ", "
+      , HH.a [HP.href puzzleUrl] [HH.text "personalized input file"]
       ]
-      where url = "https://adventofcode.com/2023/day/" <> show d.index
+      where
+        prefix = "https://adventofcode.com/2023/day/"
+        dayUrl = prefix <> show d.index
+        puzzleUrl = dayUrl <> "/input"
 
-    renderSamples d = HH.ul [] $
+    renderSamples d = HH.div_ $
       map renderSample $ fromFoldable $ scanl (\x _ -> x + 1) 0 d.samples
     renderSample i =
-      HH.li [HE.onClick (\_ -> LoadSample (i-1))] [HH.text $ "Sample " <> show i]
+      HH.button [HE.onClick (\_ -> LoadSample (i-1))] [HH.text $ "Sample " <> show i]
 
     renderSolution (Solution log part1 part2) = HH.div_
-      [ renderAnswer part1
-      , renderAnswer part2
+      [ answerContainer 1 part1
+      , answerContainer 2 part2
+      , renderCheck state.check
       , renderLog log
       ]
 
-    renderAnswer Empty = HH.div_ [HH.text "Not solved"]
-    renderAnswer (Numeric n) = HH.div
-      [ HP.classes
-        [ HH.ClassName "numeric"
-        , HH.ClassName "answer"
-        ]
+    answerContainer index answer = HH.div [HP.classes [HH.ClassName "answer"]]
+      [ HH.span_ [HH.text $ "Part " <> show index <> ": " ]
+      , HH.span_ [renderAnswer answer]
       ]
-      [ HH.text $ show n ]
-    renderAnswer (Textual t) = HH.div
-      [ HP.classes
-        [ HH.ClassName "textual"
-        , HH.ClassName "answer"
-        ]
-      ]
-      [ HH.pre_ [HH.text t] ]
+
+    renderAnswer Empty = HH.text "Not solved"
+    renderAnswer (Numeric n) = HH.text $ show n
+    renderAnswer (Textual t) = HH.pre_ [HH.text t]
 
     renderLog Nil = HH.text ""
-    renderLog l = HH.code_ [HH.text $ show l]
+    renderLog l = HH.ul [HP.classes [HH.ClassName "log"]] logLines
+      where
+        logLines = fromFoldable $ map renderLine l
+        renderLine line = HH.li_ [HH.text $ show line]
 
     renderCheck Nothing = HH.text ""
     renderCheck (Just check) = HH.div
