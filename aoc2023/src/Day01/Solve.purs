@@ -36,6 +36,7 @@ xtwone3four
 zoneight234
 7pqrstsixteen
 """
+  : Sample (Numeric 13) (Numeric 12) "1four2eightseven8one3eightwogrr"
   : Nil )
 
 
@@ -139,9 +140,9 @@ parser (Cursor "" tokens) = tokens
 parser (Cursor text tokens) | hasDigit text =
   parser $ Cursor (drop 1 text) (getDigit text : tokens)
 parser (Cursor text tokens) | hasCursive text =
-  parser $ Cursor (drop len text) (digit : tokens)
+  parser $ Cursor (drop 1 text) (digit : tokens)
     where
-      Tuple len digit = getCursive text
+      Tuple _ digit = getCursive text
 parser (Cursor text tokens) | take 1 text == "\n" = parser $ Cursor (drop 1 text) (Newline : tokens)
 parser (Cursor text tokens) = parser $ Cursor (drop 1 text) tokens
 
@@ -188,7 +189,7 @@ getCursive text = foldl worker init cursiveDigits
       if
         (take len text) == cursive
       then
-        Tuple len (Digit index)
+        Tuple 0 (Digit index)
       else
         Tuple (index+1) ParsingError
       where
