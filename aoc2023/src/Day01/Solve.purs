@@ -40,7 +40,7 @@ zoneight234
 solve :: Puzzle -> Solution
 solve puzzle = combine (part1 puzzle) (part2 puzzle)
   where
-    part1 p = Part Nil $ calibrationValue p
+    part1 = Part Nil <<< calibrationValue
     part2 _ = Part Nil Empty
 
 data State = State (Maybe Int) (Maybe Int) Int
