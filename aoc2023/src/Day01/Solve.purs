@@ -1,12 +1,14 @@
 module Day01.Solve where
 
 import Prelude
-import Data.Foldable (foldl)
-import Data.Maybe (Maybe(..))
-import Data.List (List(..), (:))
-import Data.String.CodePoints (CodePoint, toCodePointArray, codePointFromChar)
+import Data.Array (toUnfoldable)
 import Data.Enum (fromEnum)
-
+import Data.Foldable (foldl)
+import Data.List (List(..), (:))
+import Data.Maybe (Maybe(..))
+import Data.String (drop, uncons, take, length)
+import Data.String.CodePoints (CodePoint, toCodePointArray, codePointFromChar)
+import Data.Tuple (Tuple(..))
 
 import AOC
 
@@ -20,7 +22,7 @@ day01 =
 
 samples :: List Sample
 samples =
-  ( Sample (Numeric 142) Empty
+  ( Sample (Numeric 142) (Numeric 142)
       """1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
@@ -41,7 +43,11 @@ solve :: Puzzle -> Solution
 solve puzzle = combine (part1 puzzle) (part2 puzzle)
   where
     part1 = Part Nil <<< calibrationValue
-    part2 _ = Part Nil Empty
+    part2 = Part Nil <<< calibrationParser
+
+--
+-- Part 1: A simple fold
+--
 
 data State = State (Maybe Int) (Maybe Int) Int
 
@@ -74,3 +80,98 @@ calibrationValue = Numeric <<< unpack <<< iterate
         Nothing -> State first last sum
         _ -> State first d sum
 
+--
+-- Part 2: String parsing
+--
+-- There exist proper approaches to parsing in Purescript,
+-- but I didn't learn those yet
+--
+-- Let's try to push through with what I know so far...
+
+calibrationParser :: String -> Answer
+calibrationParser input = Numeric $ total $ foldl worker init tokens
+  where
+    tokens = parser (Cursor input Nil)
+
+    init = {first: 0, last: Nothing, sum: 0}
+
+    total {first, last: Just last', sum} = sum + first * 10 + last'
+    total {last: Nothing, sum} = sum
+
+    worker state Newline = init {sum = total state}
+    worker {last: Nothing, sum} (Digit d) = {first: d, last: Just d, sum}
+    worker {last, sum} (Digit d) = {first: d, last, sum}
+    worker state _ = state {sum = state.sum + errMarker}
+
+    errMarker = 5003 -- large prime number easy to sum in your head
+
+
+data Token = Digit Int | Newline | ParsingError
+instance Show Token where
+  show Newline = "LF"
+  show ParsingError = "ERR"
+  show (Digit x) = show x
+
+data Cursor = Cursor String (List Token)
+
+-- Tokens are produced in reverse order
+parser :: Cursor -> List Token
+parser (Cursor "" tokens) = tokens
+parser (Cursor text tokens) | hasDigit text =
+  parser $ Cursor (drop 1 text) (getDigit text : tokens)
+parser (Cursor text tokens) | hasCursive text =
+  parser $ Cursor (drop len text) (digit : tokens)
+    where
+      Tuple len digit = getCursive text
+parser (Cursor text tokens) | take 1 text == "\n" = parser $ Cursor (drop 1 text) (Newline : tokens)
+parser (Cursor text tokens) = parser $ Cursor (drop 1 text) tokens
+
+hasDigit :: String -> Boolean
+hasDigit s = case parseDigit s of
+  Nothing -> false
+  _ -> true
+
+getDigit :: String -> Token
+getDigit s = case parseDigit s of
+  Nothing -> ParsingError
+  Just d -> Digit d
+
+parseDigit :: String -> Maybe Int
+parseDigit s = case uncons s of
+  Nothing -> Nothing
+  Just {head} ->
+    if
+      delta < 10 && delta >= 0
+    then
+      Just delta
+    else
+      Nothing
+    where
+      delta = (fromEnum head) - (fromEnum $ codePointFromChar '0')
+
+hasCursive :: String -> Boolean
+hasCursive s = case getCursive s of
+  Tuple _ ParsingError -> false
+  _ -> true
+
+cursiveDigits :: List String
+cursiveDigits = toUnfoldable
+  ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+
+getCursive :: String -> Tuple Int Token
+getCursive text = foldl worker init cursiveDigits
+  where
+    init :: Tuple Int Token
+    init = Tuple 0 ParsingError
+
+    worker :: (Tuple Int Token) -> String -> (Tuple Int Token)
+    worker (Tuple index ParsingError) cursive =
+      if
+        (take len text) == cursive
+      then
+        Tuple len (Digit index)
+      else
+        Tuple (index+1) ParsingError
+      where
+        len = length cursive
+    worker digit _ = digit
