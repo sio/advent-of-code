@@ -100,7 +100,11 @@ render state =
     renderAnswer (Textual t) = HH.pre_ [HH.text t]
 
     renderLog Nil = HH.text ""
-    renderLog l = HH.ul [HP.classes [HH.ClassName "log"]] logLines
+    renderLog l =
+      HH.details_
+      [ HH.summary_ [HH.text "Debug log"]
+      , HH.ul [HP.classes [HH.ClassName "log"]] logLines
+      ]
       where
         logLines = fromFoldable $ map renderLine l
         renderLine line = HH.li_ [HH.text $ show line]
