@@ -4,7 +4,7 @@ import Prelude
 import Data.List (List(..), (!!))
 import Data.Maybe (Maybe(..))
 import Data.Traversable (scanl)
-import Data.Array (fromFoldable)
+import Data.Array (fromFoldable, find)
 
 import Effect (Effect)
 import Halogen as H
@@ -17,10 +17,12 @@ import Halogen.VDom.Driver (runUI)
 import AOC
 
 import Day01.Solve (day01)
+import Day02.Solve (day02)
 
 days :: Array Day
 days =
   [ day01
+  , day02
   ]
 
 type State =
@@ -45,13 +47,20 @@ setState day sampleIndex =
                 Nothing -> ""
                 Just (Sample _ _ i) -> i
 
-data Action = UserInput String | LoadSample Int
+data Action = UserInput String | SelectSample Int | SelectDay Int
 
 handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
 handleAction (UserInput s) =
   H.modify_ \state -> state { puzzle = s, result = state.day.solve s, check = Nothing }
-handleAction (LoadSample n) =
+handleAction (SelectSample n) =
   H.modify_ \state -> (setState state.day n)
+handleAction (SelectDay n) =
+  H.modify_ \state ->
+    let
+      day = find (\d -> d.index == n) days
+    in case day of
+      Nothing -> state
+      Just day -> setState day 0
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
@@ -69,6 +78,7 @@ render state =
   where
     renderHeader d = HH.header_
       [ HH.h1_ [HH.text "Advent of Code in Purescript" ]
+      , renderDays
       , HH.h2_ [HH.text $ "Day " <> show d.index <> ": " <> d.title]
       , HH.a [HP.href dayUrl] [HH.text "Puzzle description"]
       , HH.text ", "
@@ -87,7 +97,11 @@ render state =
     renderSamples d = HH.div_ $
       map renderSample $ fromFoldable $ scanl (\x _ -> x + 1) 0 d.samples
     renderSample i =
-      HH.button [HE.onClick (\_ -> LoadSample (i-1))] [HH.text $ "Sample " <> show i]
+      HH.button [HE.onClick (\_ -> SelectSample (i-1))] [HH.text $ "Sample " <> show i]
+
+    renderDays = HH.div_ $ map dayButton days
+    dayButton d =
+      HH.button [HE.onClick (\_ -> SelectDay d.index)] [HH.text $ "Day " <> show d.index]
 
     renderSolution (Solution log part1 part2) = HH.div_
       [ answerContainer 1 part1
