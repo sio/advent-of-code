@@ -9,8 +9,20 @@ body {
 h1,h2,h3 {
   line-height: 1.2;
 }
+footer {
+  opacity: 0.75;
+  font-size: 0.95rem;
+  text-align: right;
+  padding: 1rem;
+}
 
 .puzzle {
   width: 100%;
   min-height: 10em;
+}
+.log {
+  font-family: monospace;
+}
+.log > li:hover {
+  background: #FFFFE0;
 }
