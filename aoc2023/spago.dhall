@@ -13,6 +13,7 @@ to generate this file without the comments in this block.
 { name = "aoc2023"
 , dependencies =
   [ "arrays"
+  , "assert"
   , "console"
   , "effect"
   , "enums"

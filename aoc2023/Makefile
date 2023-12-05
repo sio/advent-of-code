@@ -13,6 +13,10 @@ endif
 build: $(shell find -type f -name '*.purs')
 	$(SPAGO) bundle-app $(SPAGO_ARGS)
 
+.PHONY: test
+test:
+	$(SPAGO) test $(SPAGO_TEST_ARGS)
+
 .PHONY: serve
 serve: build
 	python3 -m http.server --bind 127.0.0.1

@@ -21,13 +21,13 @@ jobs:
 
       - run: npm install -g purescript@0.15.13 spago@0.21.0 esbuild@0.19.8
       - run: make publish
-
       - uses: actions/upload-artifact@v2
         with:
           name: public
           if-no-files-found: error
           path: ./aoc2023/public/**
 
+      - run: make test
       - uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.ref == 'refs/heads/master' }}
         with:
