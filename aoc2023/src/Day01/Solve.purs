@@ -4,9 +4,9 @@ import Prelude
 import Data.Array (toUnfoldable)
 import Data.Enum (fromEnum)
 import Data.Foldable (foldl)
-import Data.List (List(..), (:))
+import Data.List (List(..), (:), zip)
 import Data.Maybe (Maybe(..))
-import Data.String (drop, uncons, take, length)
+import Data.String (drop, uncons, take, length, split, Pattern(..))
 import Data.String.CodePoints (CodePoint, toCodePointArray, codePointFromChar)
 import Data.Tuple (Tuple(..))
 
@@ -43,7 +43,7 @@ solve :: Puzzle -> Solution
 solve puzzle = combine (part1 puzzle) (part2 puzzle)
   where
     part1 = Part Nil <<< calibrationValue
-    part2 = Part Nil <<< calibrationParser
+    part2 p = Part (debug p) (calibrationParser p)
 
 --
 -- Part 1: A simple fold
@@ -105,6 +105,25 @@ calibrationParser input = Numeric $ total $ foldl worker init tokens
 
     errMarker = 5003 -- large prime number easy to sum in your head
 
+debug :: String -> Log
+debug input = map Info $ map (\(Tuple line token) -> line <> " -> " <> show token) $ zip lines tokens
+  where
+    lines = toUnfoldable $ split (Pattern "\n") input
+
+    tokens :: List (List Token)
+    tokens = group $ parser (Cursor input Nil)
+
+    group :: List Token -> List (List Token)
+    group = foldl go init
+      where
+        init :: List (List Token)
+        init = Nil
+
+        go :: List (List Token) -> Token -> List (List Token)
+        go Nil Newline = Nil
+        go acc Newline = (Nil : acc)
+        go Nil token = ((token : Nil) : Nil)
+        go (x : xs) token = ((token : x) : xs)
 
 data Token = Digit Int | Newline | ParsingError
 instance Show Token where
