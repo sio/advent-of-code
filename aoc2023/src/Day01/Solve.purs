@@ -140,11 +140,11 @@ parser (Cursor "" tokens) = tokens
 parser (Cursor text tokens) | hasDigit text =
   parser $ Cursor (drop 1 text) (getDigit text : tokens)
 parser (Cursor text tokens) | hasCursive text =
-  parser $ Cursor (drop 1 text) (digit : tokens)
-    where
-      Tuple _ digit = getCursive text
-parser (Cursor text tokens) | take 1 text == "\n" = parser $ Cursor (drop 1 text) (Newline : tokens)
-parser (Cursor text tokens) = parser $ Cursor (drop 1 text) tokens
+  parser $ Cursor (drop 1 text) (getCursive text : tokens)
+parser (Cursor text tokens) | take 1 text == "\n" =
+  parser $ Cursor (drop 1 text) (Newline : tokens)
+parser (Cursor text tokens) =
+  parser $ Cursor (drop 1 text) tokens
 
 hasDigit :: String -> Boolean
 hasDigit s = case parseDigit s of
@@ -171,16 +171,19 @@ parseDigit s = case uncons s of
 
 hasCursive :: String -> Boolean
 hasCursive s = case getCursive s of
-  Tuple _ ParsingError -> false
+  ParsingError -> false
   _ -> true
 
 cursiveDigits :: List String
 cursiveDigits = toUnfoldable
   ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 
-getCursive :: String -> Tuple Int Token
-getCursive text = foldl worker init cursiveDigits
+getCursive :: String -> Token
+getCursive text = value $ foldl worker init cursiveDigits
   where
+    value :: Tuple Int Token -> Token
+    value (Tuple _ token) = token
+
     init :: Tuple Int Token
     init = Tuple 0 ParsingError
 
