@@ -2502,12 +2502,15 @@
         return v;
       };
     };
+    var value14 = function(v) {
+      return v.value1;
+    };
     var init2 = new Tuple(0, ParsingError.value);
-    return foldl3(worker)(init2)(cursiveDigits);
+    return value14(foldl3(worker)(init2)(cursiveDigits));
   };
   var hasCursive = function(s) {
     var v = getCursive(s);
-    if (v.value1 instanceof ParsingError) {
+    if (v instanceof ParsingError) {
       return false;
     }
     ;
@@ -2528,8 +2531,7 @@
       }
       ;
       if (hasCursive(v.value0)) {
-        var v1 = getCursive(v.value0);
-        $copy_v = new Cursor(drop2(1)(v.value0), new Cons(v1.value1, v.value1));
+        $copy_v = new Cursor(drop2(1)(v.value0), new Cons(getCursive(v.value0), v.value1));
         return;
       }
       ;
@@ -2598,8 +2600,8 @@
     var initial = new State(Nothing.value, Nothing.value, 0);
     var digit = function(c) {
       var delta = fromEnum3(c) - fromEnum3(codePointFromChar("0")) | 0;
-      var $89 = delta < 10 && delta >= 0;
-      if ($89) {
+      var $87 = delta < 10 && delta >= 0;
+      if ($87) {
         return new Just(delta);
       }
       ;
@@ -2624,13 +2626,13 @@
       };
     };
     var iterate2 = function() {
-      var $114 = foldl(foldableArray)(parse7)(initial);
-      return function($115) {
-        return $114(toCodePointArray($115));
+      var $112 = foldl(foldableArray)(parse7)(initial);
+      return function($113) {
+        return $112(toCodePointArray($113));
       };
     }();
-    return function($116) {
-      return Numeric.create(unpack(iterate2($116)));
+    return function($114) {
+      return Numeric.create(unpack(iterate2($114)));
     };
   }();
   var calibrationParser = function(input3) {
@@ -2691,9 +2693,9 @@
       return new Part(debug(p2), calibrationParser(p2));
     };
     var part1 = function() {
-      var $117 = Part.create(Nil.value);
-      return function($118) {
-        return $117(calibrationValue($118));
+      var $115 = Part.create(Nil.value);
+      return function($116) {
+        return $115(calibrationValue($116));
       };
     }();
     return combine(part1(puzzle))(part2(puzzle));
