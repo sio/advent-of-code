@@ -33,7 +33,7 @@ type State =
   }
 
 initialState :: forall input. input -> State
-initialState _ = setState day01 0
+initialState _ = setState day02 0
 
 setState :: Day -> Int -> State
 setState day sampleIndex =
