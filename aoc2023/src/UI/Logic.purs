@@ -36,7 +36,7 @@ set day sampleIndex =
   , result: day.solve puzzle
   , check:  map match sample
   } where
-      sample = day.samples !! sampleIndex
+      sample = day.samples !! (sampleIndex-1)
       puzzle = case sample of
                 Nothing -> ""
                 Just (Sample _ _ i) -> i

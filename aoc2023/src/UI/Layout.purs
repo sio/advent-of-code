@@ -62,7 +62,7 @@ samples day =
     $ scanl (\x _ -> x + 1) 0 day.samples
   where
     button i =
-      HH.button [HE.onClick (\_ -> SelectSample (i-1))] [HH.text $ "Sample " <> show i]
+      HH.button [HE.onClick (\_ -> SelectSample i)] [HH.text $ "Sample " <> show i]
 
 solution :: State -> HH.HTML _ _
 solution state = result state.result
