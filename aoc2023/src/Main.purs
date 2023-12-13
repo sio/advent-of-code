@@ -2,9 +2,9 @@ module Main where
 
 import Prelude
 import Data.List (List(..), (!!))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Traversable (scanl)
-import Data.Array (fromFoldable, find)
+import Data.Array (fromFoldable, find, last)
 
 import Effect (Effect)
 import Halogen as H
@@ -33,7 +33,9 @@ type State =
   }
 
 initialState :: forall input. input -> State
-initialState _ = setState day02 0
+initialState _ = setState defaultDay 0
+  where
+    defaultDay = fromMaybe day01 $ last days
 
 setState :: Day -> Int -> State
 setState day sampleIndex =
