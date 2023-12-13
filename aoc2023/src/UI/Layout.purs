@@ -20,14 +20,19 @@ render days state =
     , navigation days
     , header state.day
     , samples state.day
-    , HH.textarea
-        [ HE.onValueChange UserInput
-        , HP.value state.puzzle
-        , classes ["puzzle"]
-        ]
-    , solution state
+    , input state.puzzle
+    , solution state.check state.result
     , footer
     ]
+
+input :: String -> HH.HTML _ _
+input text = HH.textarea
+  [ HE.onValueChange UserInput
+  , HE.onInput (\_ -> InputTainted)
+  , HP.value text
+  , classes ["puzzle"]
+  , HP.placeholder "Paste your puzzle input here or select one of the samples listed above"
+  ]
 
 title :: HH.HTML _ _
 title = HH.h1_ [HH.text "Advent of Code in Purescript" ]
@@ -64,15 +69,15 @@ samples day =
     button i =
       HH.button [HE.onClick (\_ -> SelectSample i)] [HH.text $ "Sample " <> show i]
 
-solution :: State -> HH.HTML _ _
-solution state = result state.result
-  where
-    result (Solution log part1 part2) = HH.div_
-      [ answerContainer 1 part1
-      , answerContainer 2 part2
-      , renderCheck state.check
-      , renderLog log
-      ]
+solution :: (Maybe (Solution -> Boolean)) -> Maybe Solution -> HH.HTML _ _
+solution _ Nothing = HH.button_ [HH.text "Solve"]
+solution check (Just result@(Solution log part1 part2)) = HH.div_
+  [ answerContainer 1 part1
+  , answerContainer 2 part2
+  , renderCheck check
+  , renderLog log
+  ]
+    where
 
     answerContainer index answer = HH.div [classes ["answer"]]
       [ HH.span_ [HH.text $ "Part " <> show index <> ": " ]
@@ -97,7 +102,7 @@ solution state = result state.result
     renderCheck (Just check) = HH.div
       [classes ["sample-match-" <> show c]]
       [HH.text $ if c then "OK" else "FAIL"]
-      where c = check state.result
+      where c = check result
 
 classes :: forall r i. Array String -> HP.IProp (class :: String | r) i
 classes = HP.classes <<< map HH.ClassName

@@ -33,7 +33,10 @@ set :: Day -> Int -> State
 set day sampleIndex =
   { day
   , puzzle
-  , result: day.solve puzzle
+  , result:
+      if   puzzle == ""
+      then Nothing
+      else Just $ day.solve puzzle
   , check:  map match sample
   } where
       sample = day.samples !! (sampleIndex-1)
@@ -42,8 +45,10 @@ set day sampleIndex =
                 Just (Sample _ _ i) -> i
 
 handle :: forall output m. Array Day -> Action -> H.HalogenM State Action () output m Unit
+handle _ InputTainted =
+  H.modify_ \state -> state { result = Nothing }
 handle _ (UserInput s) =
-  H.modify_ \state -> state { puzzle = s, result = state.day.solve s, check = Nothing }
+  H.modify_ \state -> state { puzzle = s, result = Just $ state.day.solve s, check = Nothing }
 handle _ (SelectSample n) =
   H.modify_ \state -> (set state.day n)
 handle days (SelectDay n) =

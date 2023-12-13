@@ -7,8 +7,12 @@ import AOC
 type State =
   { day    :: Day
   , puzzle :: Puzzle
-  , result :: Solution
+  , result :: Maybe Solution
   , check  :: Maybe (Solution -> Boolean)
   }
 
-data Action = UserInput String | SelectSample Int | SelectDay Int
+data Action
+  = UserInput String
+  | SelectSample Int
+  | SelectDay Int
+  | InputTainted
