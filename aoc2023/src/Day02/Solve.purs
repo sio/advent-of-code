@@ -1,11 +1,17 @@
 module Day02.Solve where
 
 import Prelude
-import Data.List (List(..), (:), foldl)
-import Data.String (joinWith)
+import Control.Alt ((<|>))
 import Data.Array (zip, fromFoldable)
+import Data.Either (fromRight)
 import Data.Generic.Rep (class Generic)
+import Data.List (List(..), (:), foldl)
 import Data.Show.Generic (genericShow)
+import Data.String (joinWith)
+import Parsing (Parser, runParser)
+import Parsing.Combinators (many, many1, optional)
+import Parsing.String (string, char)
+import Parsing.String.Basic (intDecimal, space)
 
 import AOC
 
@@ -31,30 +37,47 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
 solve :: Puzzle -> Solution
 solve puzzle = combine (part1 puzzle) (part2 puzzle)
   where
-    part1 _ = Part Nil $ Textual $ show $ (RGB 12 13 14)
+    part1 puzzle =
+      Part log
+        $ Numeric
+        $ foldl add zero
+        $ map (score ceiling)
+        $ games
+      where
+        ceiling = RGB 12 13 14
+        games = fromRight Nil $ runParser puzzle (many game)
+        log = map debug games
+        debug game = Info $ (show game) <> " -> " <> (show $ score ceiling game)
     part2 _ = Part Nil Empty
 
+-- | Single set of RGB cubes
 data RGB = RGB Int Int Int
+
 instance Show RGB where
   show (RGB r g b) = "RGB " <> (joinWith " " $ fromFoldable $ map show [r, g, b])
-instance Semiring RGB where
-  add (RGB r1 g1 b1) (RGB r2 g2 b2) = RGB (r1+r2) (g1+g2) (b1+b2)
-  zero = RGB 0 0 0
-  one = RGB 1 1 1
-  mul (RGB r1 g1 b1) (RGB r2 g2 b2) = RGB (r1*r2) (g1*g2) (b1*b2)
-instance Ring RGB where
-  sub (RGB r1 g1 b1) (RGB r2 g2 b2) = RGB (r1-r2) (g1-g2) (b1-b2)
-derive instance Eq RGB
-instance Ord RGB where
-  compare a b | a == b = EQ
-  compare (RGB r1 g1 b1) (RGB r2 g2 b2) | r1 < r2 || g1 < g2 || b1 < b2 = LT
-  compare _ _ = GT
 
+derive instance Eq RGB
+
+fits :: RGB -> RGB -> Boolean
+fits (RGB limR limG limB) (RGB r g b) = r <= limR && g <= limG && b <= limB
+
+instance Monoid RGB where
+  mempty = RGB 0 0 0
+
+instance Semigroup RGB where
+  append (RGB r1 g1 b1) (RGB r2 g2 b2) = RGB (r1+r2) (g1+g2) (b1+b2)
+
+-- | Full cubes game state
 data Game = Game Int (List RGB)
+
 instance Show Game where
   show (Game index sets) = "Game " <> show index <> ": " <> showSets
     where
       showSets = joinWith "; " $ fromFoldable $ map show sets
+
+-- | Add a set of cubes to the game
+draw :: Game -> RGB -> Game
+draw (Game index sets) cubes = Game index (cubes : sets)
 
 -- | Score game based on its index and whether it's possible
 score :: RGB -> Game -> Int
@@ -68,4 +91,51 @@ score limit (Game index sets) =
   where
     check :: Boolean -> RGB -> Boolean
     check false _ = false
-    check _ set = set < limit
+    check _ set = fits limit set
+
+-- | Parse game input
+game :: Parser String Game
+game = do
+  _ <- string "Game"
+  _ <- many1 space
+  index <- intDecimal
+  _ <- string ": "
+  draws <- many rgb
+  pure $ Game index draws
+
+rgb :: Parser String RGB
+rgb = do
+  cubes <- many1 cube
+  _ <- optional $ char ';'
+  _ <- many space
+  pure $ foldl append mempty cubes
+
+cube :: Parser String RGB
+cube = do
+  count <- intDecimal
+  _ <- many1 space
+  which <- color
+  _ <- optional $ char ','
+  _ <- many space
+  pure $ which count
+
+data Color = Red | Green | Blue
+color :: Parser String (Int -> RGB)
+color = do
+  name <- (string "red") <|> (string "green") <|> (string "blue")
+  _ <- many $ string ","
+  _ <- many space
+  let tag =
+        if name == "red" then
+          Red else
+        if name == "green" then
+          Green
+        else
+          Blue
+  pure $ paint tag
+
+-- | Paint a number of cubes with given color
+paint :: Color -> Int -> RGB
+paint Red x   = RGB x 0 0
+paint Green x = RGB 0 x 0
+paint Blue x  = RGB 0 0 x
